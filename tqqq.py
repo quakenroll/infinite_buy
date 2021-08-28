@@ -24,31 +24,36 @@ initialSellRate = 1.15
 sellRateStrategyCount = 2
 sellRateIncreaseStep = 0.025
 
-
 #0.59
 initialSplitCount = 24
 splitStrategyCount = 4
 splitIncreaseStep = 1.745
 
 barrierStrategyCount = 1
+barrierStep = 1
 buyRatioOnBearMarket = 0.41
+buyMoreUnderLossPercentage = 0.00
+
 for barrierStrategyIndex in range (0, barrierStrategyCount ):
 	for sellRateStrategyIndex in range (0, sellRateStrategyCount ):
 		for splitStrategyIndex in range (0, splitStrategyCount ):
 			strategy.append(
 				strat.Strategy(response, 
-					initMoney=float(initialMoney)/(splitStrategyCount * sellRateStrategyCount * barrierStrategyCount), 
+					budget=float(initialMoney)/(splitStrategyCount * sellRateStrategyCount * barrierStrategyCount), 
 					splitCount=initialSplitCount + splitStrategyIndex * splitIncreaseStep, 
 					sellRate=initialSellRate+ sellRateStrategyIndex * sellRateIncreaseStep, 
 					buyRatioOnBearMarket=buyRatioOnBearMarket,
-					barrier=barrierStrategyIndex * 1, logTrade=False))
+					barrier=barrierStrategyIndex * barrierStep, 
+					buyMoreUnderLossPercentage=buyMoreUnderLossPercentage, 
+					logTrade=False))
 
 strategyCount = len(strategy)
 balances = []
 for dayIdx in range (0, openPrices.size):
 	balanceTotal = 0
 	for strategyIdx in range (0, strategyCount):
-		strategy[strategyIdx].trade(dayIdx)
+		strategy[strategyIdx].sell_all_when_done(dayIdx)
+		strategy[strategyIdx].buy(dayIdx)
 		balanceTotal += strategy[strategyIdx].balanceHistory[dayIdx]
 
 	balances.append(balanceTotal)

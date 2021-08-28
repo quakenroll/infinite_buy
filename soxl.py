@@ -25,38 +25,55 @@ dates = response['Date']
 
 strategy = []
 
-initialMoney = 1000000
-splitStrategyCount = 5
+
+initialMoney = 2000000
+initialSellRate = 1.12
 sellRateStrategyCount = 1
-defaultSplitCount = 25
-barrierStrategyCount = 50
+sellRateIncreaseStep = 0.01
+
+initialSplitCount = 25
+splitStrategyCount = 5
+splitIncreaseStep = 1.745
+
+barrierStrategyCount = 1
+barrierStep = 1
+buyRatioOnBearMarket = 0.5
+buyMoreUnderLossPercentage = 0.00
+
+
 for barrierStrategyIndex in range (0, barrierStrategyCount ):
 	for sellRateStrategyIndex in range (0, sellRateStrategyCount ):
 		for splitStrategyIndex in range (0, splitStrategyCount ):
 			strategy.append(
 				strat.Strategy(response, 
-					initMoney=float(initialMoney)/(splitStrategyCount * sellRateStrategyCount * barrierStrategyCount), 
-					splitCount=defaultSplitCount + splitStrategyIndex, 
-					sellRate=1.12 + sellRateStrategyIndex * 0.01, 
-					buyRatioOnBearMarket=0.5,
-					barrier=barrierStrategyIndex * 1))
+					budget=float(initialMoney)/(splitStrategyCount * sellRateStrategyCount * barrierStrategyCount), 
+					splitCount=initialSplitCount + splitStrategyIndex * splitIncreaseStep, 
+					sellRate=initialSellRate+ sellRateStrategyIndex * sellRateIncreaseStep, 
+					buyRatioOnBearMarket=buyRatioOnBearMarket,
+					barrier=barrierStrategyIndex * barrierStep, 
+					buyMoreUnderLossPercentage = buyMoreUnderLossPercentage,
+					logTrade=False))
 
 strategyCount = len(strategy)
-for strategyIdx in range (0, strategyCount):
-	for dayIdx in range (0, openPrices.size):
-		strategy[strategyIdx].trade(dayIdx)
-
 balances = []
 for dayIdx in range (0, openPrices.size):
 	balanceTotal = 0
 	for strategyIdx in range (0, strategyCount):
+		strategy[strategyIdx].sell_all_when_done(dayIdx)
+		strategy[strategyIdx].buy(dayIdx)
 		balanceTotal += strategy[strategyIdx].balanceHistory[dayIdx]
+
 	balances.append(balanceTotal)
+
+	#if(dayIdx % 200):
+	#	rebalance = balanceTotal/strategyCount
+	#	for strategyIdx in range (0, strategyCount):
+	#		curBalance = strategy[strategyIdx].balanceHistory[dayIdx]
+
 
 mul = initialMoney/closePrices[0]
 
-
-plt.plot(strategy[0].stockData.index, balances, closePrices * mul)
-#plt.plot(strategy[0].stockData.index, balances)
+#plt.plot(strategy[0].stockData.index, balances, closePrices * mul)
+plt.plot(strategy[0].stockData.index, balances)
 plt.grid(True)
 plt.show()
