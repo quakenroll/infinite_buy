@@ -5,15 +5,9 @@ import datetime
 import matplotlib.pyplot as plt
 import strategy as strat
 
-#start_time_str = '2020-03-01'
-#end_time_str = '2021-08-20'
-
-start_time_str = '2018-01-01'
-end_time_str = '2021-08-20'
-
-
-ticker = "SOXL"
-tickerRev1 = "SOXX"
+start_time_str = '2016-01-01'
+end_time_str = '2021-06-20'
+ticker = "SPXL"
 
 #response = requests.get(HISTORY_DATA_URL)
 response = yf.download(ticker, start=start_time_str, end=end_time_str)
@@ -25,21 +19,20 @@ dates = response['Date']
 
 strategy = []
 
+initialMoney = 10000000
+initialSellRate = 1.08
+sellRateStrategyCount = 5
+sellRateIncreaseStep = 0.015
 
-initialMoney = 1000000
-initialSellRate = 1.12
-sellRateStrategyCount = 1
-sellRateIncreaseStep = 0.01
-
-initialSplitCount = 25
-splitStrategyCount = 5
+#0.59
+initialSplitCount = 24
+splitStrategyCount = 8 
 splitIncreaseStep = 1.745
 
 delayTradeStrategyCount = 1
 delayTradeStep = 1
-buyOnDropRatio = 0.5
+buyOnDropRatio = 0.41
 buyMoreUnderLossRatio = 0.00
-
 
 for delayTradeStrategyIndex in range (0, delayTradeStrategyCount ):
 	for sellRateStrategyIndex in range (0, sellRateStrategyCount ):
@@ -56,7 +49,7 @@ for delayTradeStrategyIndex in range (0, delayTradeStrategyCount ):
 
 strategyCount = len(strategy)
 balances = []
-rebalance = True
+rebalance = False
 winnerTakesItAll = True
 
 for dayIdx in range (0, openPrices.size):

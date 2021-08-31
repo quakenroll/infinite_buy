@@ -12,7 +12,7 @@ initMoney = 100000
 splitCount = 40
 sellRate = 1.10
 oneMoney = initMoney / splitCount
-buyRatioOnBearMarket = 0.5
+buyOnDropRatio = 0.5
 
 #response = requests.get(HISTORY_DATA_URL)
 response = yf.download(ticker, start=start_time_str, end=end_time_str)
@@ -66,15 +66,15 @@ for row in range (0, size):
         isFirst = False
         
 
-    buyRatio = buyRatioOnBearMarket
-    #buyRatio = buyRatioOnBearMarket - ((splitCount-buyIndex)/10.0/splitCount)
+    buyRatio = buyOnDropRatio
+    #buyRatio = buyOnDropRatio - ((splitCount-buyIndex)/10.0/splitCount)
     if stockMeanValue < float(closePrices[row]) :
         sucess = buy_close(float(closePrices[row]), oneMoney * buyRatio)
         if sucess == True:
             buyIndex += buyRatio
 
-    buyRatio = 1.0 - buyRatioOnBearMarket
-    #buyRatio = 1.0 - buyRatioOnBearMarket - ((splitCount-buyIndex)/10.0/splitCount)
+    buyRatio = 1.0 - buyOnDropRatio
+    #buyRatio = 1.0 - buyOnDropRatio - ((splitCount-buyIndex)/10.0/splitCount)
 
     sucess = buy_close(float(closePrices[row]), oneMoney  * buyRatio )
     if sucess == True:

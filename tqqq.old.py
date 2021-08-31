@@ -23,17 +23,17 @@ initialMoney = 1000000
 splitStrategyCount = 5
 sellRateStrategyCount = 1
 defaultSplitCount = 20
-barrierStrategyCount = 80
-for barrierStrategyIndex in range (0, barrierStrategyCount ):
+delayTradeStrategyCount = 80
+for delayTradeStrategyIndex in range (0, delayTradeStrategyCount ):
 	for sellRateStrategyIndex in range (0, sellRateStrategyCount ):
 		for splitStrategyIndex in range (0, splitStrategyCount ):
 			strategy.append(
 				strat.Strategy(response, 
-					initMoney=float(initialMoney)/(splitStrategyCount * sellRateStrategyCount * barrierStrategyCount), 
+					initMoney=float(initialMoney)/(splitStrategyCount * sellRateStrategyCount * delayTradeStrategyCount), 
 					splitCount=defaultSplitCount + splitStrategyIndex, 
 					sellRate=1.10 + sellRateStrategyIndex * 0.015, 
-					buyRatioOnBearMarket=0.5, 
-					barrier=barrierStrategyIndex * 1))
+					buyOnDropRatio=0.5, 
+					delayTrade=delayTradeStrategyIndex * 1))
 
 for strategyIdx in range (0, len(strategy)):
 	for dayIdx in range (0, openPrices.size):
@@ -43,7 +43,7 @@ balances = []
 for dayIdx in range (0, openPrices.size):
 	balanceTotal = 0
 	for strategyIdx in range (0, len(strategy)):
-		balanceTotal += strategy[strategyIdx].balanceHistory[dayIdx]
+		balanceTotal += strategy[strategyIdx].lastBalance
 	balances.append(balanceTotal)
 
 mul = initialMoney/closePrices[0]
