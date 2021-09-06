@@ -17,7 +17,7 @@ highPrices = response['High']
 response['Date'] = response.index
 dates = response['Date']
 
-strategy = []
+strategies = []
 
 initialMoney = 1000000
 splitStrategyCount = 5
@@ -27,28 +27,28 @@ delayTradeStrategyCount = 80
 for delayTradeStrategyIndex in range (0, delayTradeStrategyCount ):
 	for sellRateStrategyIndex in range (0, sellRateStrategyCount ):
 		for splitStrategyIndex in range (0, splitStrategyCount ):
-			strategy.append(
+			strategies.append(
 				strat.Strategy(response, 
 					initMoney=float(initialMoney)/(splitStrategyCount * sellRateStrategyCount * delayTradeStrategyCount), 
 					splitCount=defaultSplitCount + splitStrategyIndex, 
-					sellRate=1.10 + sellRateStrategyIndex * 0.015, 
-					buyOnDropRatio=0.5, 
+					profitRate=1.10 + sellRateStrategyIndex * 0.015, 
+					bearMarketbuyRatio=0.5, 
 					delayTrade=delayTradeStrategyIndex * 1))
 
-for strategyIdx in range (0, len(strategy)):
+for strategyIdx in range (0, len(strategies)):
 	for dayIdx in range (0, openPrices.size):
-		strategy[strategyIdx].trade(dayIdx)
+		strategies[strategyIdx].trade(dayIdx)
 
 balances = []
 for dayIdx in range (0, openPrices.size):
 	balanceTotal = 0
-	for strategyIdx in range (0, len(strategy)):
-		balanceTotal += strategy[strategyIdx].lastBalance
+	for strategyIdx in range (0, len(strategies)):
+		balanceTotal += strategies[strategyIdx].lastBalance
 	balances.append(balanceTotal)
 
 mul = initialMoney/closePrices[0]
 
-plt.plot(strategy[0].stockData.index, balances, closePrices * mul)
-#plt.plot(strategy[0].stockData.index, balances)
+plt.plot(strategies[0].stockData.index, balances, closePrices * mul)
+#plt.plot(strategies[0].stockData.index, balances)
 plt.grid(True)
 plt.show()

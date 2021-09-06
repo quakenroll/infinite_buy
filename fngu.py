@@ -31,8 +31,8 @@ splitIncreaseStep = 1
 
 delayTradeStrategyCount = 1
 delayTradeStep = 1
-buyOnDropRatio = 0.5
-buyMoreUnderLossRatio = 0.00
+buyRatioOnBearMarket = 0.5
+buyMoreUnderLossPercentage = 0.00
 
 
 for delayTradeStrategyIndex in range (0, delayTradeStrategyCount ):
@@ -42,10 +42,10 @@ for delayTradeStrategyIndex in range (0, delayTradeStrategyCount ):
 				strat.Strategy(response, 
 					budget=float(initialMoney)/(splitStrategyCount * sellRateStrategyCount * delayTradeStrategyCount), 
 					splitCount=initialSplitCount + splitStrategyIndex * splitIncreaseStep, 
-					sellRate=initialSellRate+ sellRateStrategyIndex * sellRateIncreaseStep, 
-					buyOnDropRatio=buyOnDropRatio,
+					profitRate=initialSellRate+ sellRateStrategyIndex * sellRateIncreaseStep, 
+					buyRatioOnBearMarket=buyRatioOnBearMarket,
 					delayTrade=delayTradeStrategyIndex * delayTradeStep, 
-					buyMoreUnderLossRatio=buyMoreUnderLossRatio, 
+					buyMoreUnderLossPercentage=buyMoreUnderLossPercentage, 
 					logTrade=False))
 
 strategyCount = len(strategy)

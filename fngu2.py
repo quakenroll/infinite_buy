@@ -11,7 +11,7 @@ import strategy as strat
 #end_time_str = '2021-06-20'
 start_time_str = '2016-01-01'
 end_time_str = '2021-08-28'
-ticker = "SPXL"
+ticker = "FNGU"
 
 #response = requests.get(HISTORY_DATA_URL)
 response = yf.download(ticker, start=start_time_str, end=end_time_str)
@@ -25,7 +25,7 @@ strategies = []
 
 
 initialMoney = 10000000
-sellRateMiddle = 1.08
+sellRateMiddle = 1.15
 sellRateStrategyCount = 30
 sellRateIncreaseStep = 0.1 * (1/100)
 initialSellRate = sellRateMiddle - (sellRateStrategyCount - 1)/2 * sellRateIncreaseStep
@@ -50,7 +50,7 @@ cashRatio = 0.0
 
 losscutStrategyCount = 41
 losscutIncreaseStep = 0.5 * (1/100)
-losscutMiddle = 1.00
+losscutMiddle = 1.03
 initialLosscut = losscutMiddle - (losscutStrategyCount - 1)/2 * losscutIncreaseStep
 rebalanceInterval = 40
 rebalanceRateAtOnce = 0.1
@@ -93,9 +93,9 @@ cash = cashRatio * initialMoney
 
 initialMoney = 10000000
 #sellRateMiddle = 1.13
-sellRateMiddle = 1.11
-sellRateStrategyCount = 35
-sellRateIncreaseStep = 0.1 * (1/100)
+sellRateMiddle = 1.25
+sellRateStrategyCount = 40
+sellRateIncreaseStep = 0.5 * (1/100)
 initialSellRate = sellRateMiddle - (sellRateStrategyCount - 1)/2 * sellRateIncreaseStep
 
 splitStrategyCount = 1
@@ -119,7 +119,7 @@ cashRatio = 0.0
 
 losscutStrategyCount = 41
 losscutIncreaseStep = 0.5 * (1/100)
-losscutMiddle = 1.03
+losscutMiddle = 1.33
 initialLosscut = losscutMiddle - (losscutStrategyCount - 1)/2 * losscutIncreaseStep
 rebalanceInterval = 22
 rebalanceRateAtOnce = 0.1

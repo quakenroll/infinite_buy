@@ -7,12 +7,12 @@ import matplotlib.pyplot as plt
 import strategy as strat
 
 
+#start_time_str = '2016-01-01'
 #end_time_str = '2021-06-20'
-#start_time_str = '2017-04-08'
 start_time_str = '2016-01-01'
-end_time_str = '2021-06-20'
-ticker = "TQQQ"
-tickerHedge = "TLT"
+end_time_str = '2021-08-30'
+ticker = "SOXL"
+tickerHedge = "UVXY"
 
 #response = requests.get(HISTORY_DATA_URL)
 response = yf.download(ticker, start=start_time_str, end=end_time_str)
@@ -23,141 +23,20 @@ responseHedge = yf.download(tickerHedge, start=start_time_str, end=end_time_str)
 
 strategies = []
 
-
 '''
+#mdd = 0.407, x 19.5
+start_time_str = '2016-01-01'
+end_time_str = '2021-08-30'
 initialMoney = 10000000
-initialSellRate = 1.15
-sellRateStrategyCount = 1
-sellRateIncreaseStep = -0.005
-
-#0.59
-initialSplitCount = 25.745
-splitStrategyCount = 1
-splitIncreaseStep = 1.745
-
-delayTradeStrategyCount = 1
-delayTradeStep = 1
-buyOnRiseRatio = 0.41
-buyMoreUnderLossRatio = 0.00
-minimumLosscutRate = 0.98
-hedgeRatio = 0.0
-rebalanceInterval = 5
-'''
-'''
-# x 13.5
-initialMoney = 10000000
-sellRateMiddle = 1.13
-sellRateStrategyCount = 41
-sellRateIncreaseStep = 0.001
-initialSellRate = sellRateMiddle - (sellRateStrategyCount - 1)/2 * sellRateIncreaseStep
-
-splitStrategyCount = 3
-splitIncreaseStep = 0.05
-splitMiddle = 25.745
-initialSplitCount = splitMiddle - (splitStrategyCount - 1)/2 * splitIncreaseStep
-
-delayTradeStrategyCount = 1
-delayTradeStep = 1
-buyOnRiseRatio = 0.41
-buyMoreUnderLossRatio = 0.00
-hedgeRatio = 0.0
-minimumLosscutRate = 1.05
-rebalanceInterval = 5
-'''
-
-
-'''
-x 12.84
-initialMoney = 10000000
-sellRateMiddle = 1.13
-sellRateStrategyCount = 41
-sellRateIncreaseStep = 0.1 * (1/100)
-initialSellRate = sellRateMiddle - (sellRateStrategyCount - 1)/2 * sellRateIncreaseStep
-
-splitStrategyCount = 3
-splitIncreaseStep = 0.05
-splitMiddle = 25.745
-initialSplitCount = splitMiddle - (splitStrategyCount - 1)/2 * splitIncreaseStep
-
-delayTradeStrategyCount = 1
-delayTradeStep = 1
-buyOnRiseRatio = 0.41
-buyMoreUnderLossRatio = 0.00
-hedgeRatio = 0.0
-
-
-losscutStrategyCount = 10
-losscutIncreaseStep = 0.15 * (1/100)
-#losscutMiddle = 1.09
-losscutMiddle = 1.05
-initialLosscut = losscutMiddle - (losscutStrategyCount - 1)/2 * losscutIncreaseStep
-rebalanceInterval = 5
-'''
-'''
-# x 11
-initialMoney = 10000000
-sellRateMiddle = 1.13
-sellRateStrategyCount = 41
-sellRateIncreaseStep = 0.1 * (1/100)
-initialSellRate = sellRateMiddle - (sellRateStrategyCount - 1)/2 * sellRateIncreaseStep
-
-splitStrategyCount = 3
-splitIncreaseStep = 0.05
-splitMiddle = 25.745
-initialSplitCount = splitMiddle - (splitStrategyCount - 1)/2 * splitIncreaseStep
-
-delayTradeStrategyCount = 1
-delayTradeStep = 1
-buyOnRiseRatio = 0.41
-buyMoreUnderLossRatio = 0.00
-hedgeRatio = 0.0
-
-
-losscutStrategyCount = 10
-losscutIncreaseStep = 0.3 * (1/100)
-#losscutMiddle = 1.09
-losscutMiddle = 1.04
-initialLosscut = losscutMiddle - (losscutStrategyCount - 1)/2 * losscutIncreaseStep
-rebalanceInterval = 5
-'''
-'''
-# x 11, mdd 50
-initialMoney = 10000000
-sellRateMiddle = 1.13
-sellRateStrategyCount = 41
-sellRateIncreaseStep = 0.1 * (1/100)
-initialSellRate = sellRateMiddle - (sellRateStrategyCount - 1)/2 * sellRateIncreaseStep
-
-splitStrategyCount = 3
-splitIncreaseStep = 0.05
-splitMiddle = 25.745
-initialSplitCount = splitMiddle - (splitStrategyCount - 1)/2 * splitIncreaseStep
-
-delayTradeStrategyCount = 1
-delayTradeStep = 1
-buyOnRiseRatio = 0.41
-buyMoreUnderLossRatio = 0.00
-hedgeRatio = 0.0
-
-
-losscutStrategyCount = 10
-losscutIncreaseStep = 0.5 * (1/100)
-losscutMiddle = 1.04
-initialLosscut = losscutMiddle - (losscutStrategyCount - 1)/2 * losscutIncreaseStep
-rebalanceInterval = 15
-'''
-'''
-mdd 40.3, x 10.27
-initialMoney = 10000000
-sellRateMiddle = 1.13
+sellRateMiddle = 1.11
 sellRateStrategyCount = 35
 sellRateIncreaseStep = 0.1 * (1/100)
 initialSellRate = sellRateMiddle - (sellRateStrategyCount - 1)/2 * sellRateIncreaseStep
 
 splitStrategyCount = 1
 splitIncreaseStep = 0.5
-#splitMiddle = 25.745
-splitMiddle = 25.745
+splitMiddle = 26.745
+#splitMiddle = 16.745
 initialSplitCount = splitMiddle - (splitStrategyCount - 1)/2 * splitIncreaseStep
 
 
@@ -170,130 +49,66 @@ initialbuyOnRiseRatio = buyOnRiseRatioMiddle - (buyOnRiseRatioStrategyCount - 1)
 delayTradeStrategyCount = 1
 delayTradeStep = 1
 buyMoreUnderLossRatio = 0.00
-hedgeRatio = 0.0
+hedgeRatio = 0.
 
 
 losscutStrategyCount = 41
-losscutIncreaseStep = 0.1 * (1/100)
-losscutMiddle = 1.01
+losscutIncreaseStep = 0.5 * (1/100)
+losscutMiddle = 1.03
 initialLosscut = losscutMiddle - (losscutStrategyCount - 1)/2 * losscutIncreaseStep
-rebalanceInterval = 20
-'''
-'''
-mdd 40.6, x 10.5
-initialMoney = 10000000
-sellRateMiddle = 1.13
-sellRateStrategyCount = 35
-sellRateIncreaseStep = 0.1 * (1/100)
-initialSellRate = sellRateMiddle - (sellRateStrategyCount - 1)/2 * sellRateIncreaseStep
-
-splitStrategyCount = 1
-splitIncreaseStep = 0.5
-#splitMiddle = 25.745
-splitMiddle = 25.745
-initialSplitCount = splitMiddle - (splitStrategyCount - 1)/2 * splitIncreaseStep
-
-
-buyOnRiseRatioStrategyCount = 1
-buyOnRiseRatioIncreaseStep = 0.01
-buyOnRiseRatioMiddle = 0.41
-initialbuyOnRiseRatio = buyOnRiseRatioMiddle - (buyOnRiseRatioStrategyCount - 1)/2 * buyOnRiseRatioIncreaseStep
-
-
-delayTradeStrategyCount = 1
-delayTradeStep = 1
-buyMoreUnderLossRatio = 0.00
-hedgeRatio = 0.0
-
-
-losscutStrategyCount = 51
-losscutIncreaseStep = 0.8 * (1/100)
-losscutMiddle = 1.01
-initialLosscut = losscutMiddle - (losscutStrategyCount - 1)/2 * losscutIncreaseStep
-rebalanceInterval = 30
-rebalanceRateAtOnce = 0.13
-hedge = hedgeRatio * initialMoney
-'''
-
-'''
-mdd 39.5 , x 10.35
-initialMoney = 10000000
-sellRateMiddle = 1.13
-sellRateStrategyCount = 35
-sellRateIncreaseStep = 0.1 * (1/100)
-initialSellRate = sellRateMiddle - (sellRateStrategyCount - 1)/2 * sellRateIncreaseStep
-
-splitStrategyCount = 1
-splitIncreaseStep = 0.5
-#splitMiddle = 25.745
-splitMiddle = 25.745
-initialSplitCount = splitMiddle - (splitStrategyCount - 1)/2 * splitIncreaseStep
-
-
-buyOnRiseRatioStrategyCount = 1
-buyOnRiseRatioIncreaseStep = 0.01
-buyOnRiseRatioMiddle = 0.41
-initialbuyOnRiseRatio = buyOnRiseRatioMiddle - (buyOnRiseRatioStrategyCount - 1)/2 * buyOnRiseRatioIncreaseStep
-
-
-delayTradeStrategyCount = 1
-delayTradeStep = 1
-buyMoreUnderLossRatio = 0.00
-hedgeRatio = 0.0
-
-
-losscutStrategyCount = 51
-losscutIncreaseStep = 0.8 * (1/100)
-losscutMiddle = 1.01
-initialLosscut = losscutMiddle - (losscutStrategyCount - 1)/2 * losscutIncreaseStep
-rebalanceInterval = 20
-rebalanceRateAtOnce = 0.13
-hedge = hedgeRatio * initialMoney
-'''
-
-initialMoney = 10000000
-sellRateMiddle = 1.14
-sellRateStrategyCount = 35
-sellRateIncreaseStep = 0.1 * (1/100)
-initialSellRate = sellRateMiddle - (sellRateStrategyCount - 1)/2 * sellRateIncreaseStep
-
-splitStrategyCount = 1
-splitIncreaseStep = 0.5
-#splitMiddle = 25.745
-splitMiddle = 25.745
-initialSplitCount = splitMiddle - (splitStrategyCount - 1)/2 * splitIncreaseStep
-
-
-buyOnRiseRatioStrategyCount = 1
-buyOnRiseRatioIncreaseStep = 0.01
-buyOnRiseRatioMiddle = 0.41
-initialbuyOnRiseRatio = buyOnRiseRatioMiddle - (buyOnRiseRatioStrategyCount - 1)/2 * buyOnRiseRatioIncreaseStep
-
-
-delayTradeStrategyCount = 1
-delayTradeStep = 1
-buyMoreUnderLossRatio = 0.00
-hedgeRatio = 0.1
-
-
-losscutStrategyCount = 51
-losscutIncreaseStep = 0.8 * (1/100)
-losscutMiddle = 1.01
-initialLosscut = losscutMiddle - (losscutStrategyCount - 1)/2 * losscutIncreaseStep
-rebalanceInterval = 20
+rebalanceRateAtOnce = 0.1
+rebalanceInterval = 40
 mainAssetToHedgeInterval = 1
 hedgetToMainAssetInterval = 1
 
 rebalanceRateAtOnce = 0.1
-
 mainAssetToHedgeRebalanceRateAtOnce = 0.05
 hedgeToMainAssetRebalanceRateAtOnce = 1
-hedge = hedgeRatio * initialMoney
+'''
 
+initialMoney = 10000000
+sellRateMiddle = 1.15
+sellRateStrategyCount = 150
+sellRateIncreaseStep = 0.1 * (1/100)
+initialSellRate = sellRateMiddle - (sellRateStrategyCount - 1)/2 * sellRateIncreaseStep
+
+splitStrategyCount = 10
+splitIncreaseStep = 0.5
+#splitMiddle = 25.745
+splitMiddle = 26.745
+initialSplitCount = splitMiddle - (splitStrategyCount - 1)/2 * splitIncreaseStep
+
+
+buyOnRiseRatioStrategyCount = 1
+buyOnRiseRatioIncreaseStep = 0.01
+buyOnRiseRatioMiddle = 0.41
+initialbuyOnRiseRatio = buyOnRiseRatioMiddle - (buyOnRiseRatioStrategyCount - 1)/2 * buyOnRiseRatioIncreaseStep
+
+
+delayTradeStrategyCount = 1
+delayTradeStep = 1
+buyMoreUnderLossRatio = 0.00
+hedgeRatio = 0.22
+
+
+losscutStrategyCount = 1
+losscutIncreaseStep = 0.5 * (1/100)
+losscutMiddle = 1.55
+initialLosscut = losscutMiddle - (losscutStrategyCount - 1)/2 * losscutIncreaseStep
+rebalanceInterval = 40
+mainAssetToHedgeInterval = 5
+hedgetToMainAssetInterval = 100000
+
+rebalanceRateAtOnce = 0.1
+mainAssetToHedgeRebalanceRateAtOnce = 0.1
+hedgeToMainAssetRebalanceRateAtOnce = 1
+
+
+hedge = hedgeRatio * initialMoney
 totalStrategyCount = splitStrategyCount * sellRateStrategyCount * delayTradeStrategyCount * losscutStrategyCount * buyOnRiseRatioStrategyCount 
 budget = initialMoney * (1.0-hedgeRatio) / totalStrategyCount 
 
-##########################################################################################
+############################################################################################
 # hedgeStrategy
 initialHedgeMoney = initialMoney * (hedgeRatio)
 hedgeStrategyCount = int(initialHedgeMoney / budget)
@@ -301,12 +116,16 @@ hedgeStrategies = []
 for i in range (0, hedgeStrategyCount ):
 	s = strat.Strategy(stockData=responseHedge, 
 				budget=budget, 
-				splitCount=10, 
-				profitRate=1000, 
+				splitCount = 10, 
+				profitRate= 5.25 + 9 / hedgeStrategyCount * i, 
+				minimumLosscutRate=1000,
 				buyOnRiseRatio=0,
 				delayTrade=0, 
 				buyMoreUnderLossRatio =0,
 				logTrade=False, name='hedge')
+
+
+
 	hedgeStrategies.append(s)
 
 
@@ -343,19 +162,22 @@ mainAssetInvestmentRatios = []
 investmentAmount = 0
 highestBalance = 0
 reservedRebalance = 0
-rebalanceHedge = True
+rebalanceHedge =  True
 hedgeRebalancingWaitUntil = 1
 reservedBudgetForRebalance = 0
 mainAssetBalances = []
 hedgeAssetBalances = []
 hedgeRebalanceCount = 0
 consecutiveHedgeToMainRevCount = 0
-hedgeRebalanceHistory = []
+hedgeBudgetHistory = []
+mainAssetBudgetHistory = []
+
 for dayIdx in range (0, openPrices.size):
 	balanceTotal = 0
 	mainAssetTotalBudgets = 0
 	mainAssetBalanceTotal = 0
 	hedgeAssetBalanceTotal = 0
+	hedgeBudgetTotal = 0
 
 	if(reservedBudgetForRebalance > 0):
 		for sss in range(0, strategyCount):
@@ -371,14 +193,22 @@ for dayIdx in range (0, openPrices.size):
 
 	balanceTotal = mainAssetBalanceTotal
 	for hi in range (0, hedgeStrategyCount):
-		hedgeStrategies[hi].sell_all_when_done(dayIdx)
-		hedgeStrategies[hi].buy(dayIdx)
-		hedgeStrategies[hi].resetBuyProgress()
+		amount = 0
+		#amount = hedgeStrategies[hi].sell_on_volatility( dayIdx, 200, hedgeStrategies[hi].profitRate, 0.01)
+		if(amount > 0):
+			reservedBudgetForRebalance += hedgeStrategies[hi].transfer_budget( amount )
+		else:
+			hedgeStrategies[hi].buy(dayIdx)
+			hedgeStrategies[hi].resetBuyProgress()
+
 		hedgeStrategies[hi].post_trade(dayIdx)
 		hedgeAssetBalanceTotal += hedgeStrategies[hi].lastBalance
+		hedgeBudgetTotal += hedgeStrategies[hi].budget
 
 	balanceTotal = hedgeAssetBalanceTotal + mainAssetBalanceTotal
 	balances.append(balanceTotal)
+	mainAssetBudgetHistory.append(mainAssetTotalBudgets)
+	hedgeBudgetHistory.append(hedgeBudgetTotal)
 
 	ratio = mainAssetTotalBudgets/balanceTotal
 	assert(ratio >= -0.1)
@@ -494,6 +324,9 @@ plt.grid(True)
 
 plt.plot(strategies[i].stockData.index, mainAssetBalances, label = str(i))
 plt.plot(strategies[i].stockData.index, hedgeAssetBalances, label = str(i))
+plt.plot(strategies[i].stockData.index, hedgeBudgetHistory, label = str(i))
+plt.plot(strategies[i].stockData.index, mainAssetBudgetHistory, label = str(i))
+
 
 
 #plt.yscale("log",basey=2)

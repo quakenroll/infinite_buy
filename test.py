@@ -10,9 +10,9 @@ ticker = "TQQQ"
 
 initMoney = 100000
 splitCount = 40
-sellRate = 1.10
+profitRate = 1.10
 oneMoney = initMoney / splitCount
-buyOnDropRatio = 0.5
+bearMarketbuyRatio = 0.5
 
 #response = requests.get(HISTORY_DATA_URL)
 response = yf.download(ticker, start=start_time_str, end=end_time_str)
@@ -55,26 +55,26 @@ for row in range (0, size):
         buyIndex = 0
         stockCount = 0
         stockMeanValue = 0
-    elif stockMeanValue * sellRate < float(highPrices[row]) :
-        initMoney += (stockCount * stockMeanValue * sellRate )
+    elif stockMeanValue * profitRate < float(highPrices[row]) :
+        initMoney += (stockCount * stockMeanValue * profitRate )
         oneMoney = initMoney / splitCount
         if isFirst == False:
-            print("buyIndex(%s) [수익청산] row(%s, %d), initMoney(%d) Count(%d) Mean(%f) SELL(%f)" % (int(buyIndex), dates[row], row, initMoney, stockCount, stockMeanValue, stockMeanValue * sellRate))
+            print("buyIndex(%s) [수익청산] row(%s, %d), initMoney(%d) Count(%d) Mean(%f) SELL(%f)" % (int(buyIndex), dates[row], row, initMoney, stockCount, stockMeanValue, stockMeanValue * profitRate))
         buyIndex = 0
         stockCount = 0
         stockMeanValue = 0
         isFirst = False
         
 
-    buyRatio = buyOnDropRatio
-    #buyRatio = buyOnDropRatio - ((splitCount-buyIndex)/10.0/splitCount)
+    buyRatio = bearMarketbuyRatio
+    #buyRatio = bearMarketbuyRatio - ((splitCount-buyIndex)/10.0/splitCount)
     if stockMeanValue < float(closePrices[row]) :
         sucess = buy_close(float(closePrices[row]), oneMoney * buyRatio)
         if sucess == True:
             buyIndex += buyRatio
 
-    buyRatio = 1.0 - buyOnDropRatio
-    #buyRatio = 1.0 - buyOnDropRatio - ((splitCount-buyIndex)/10.0/splitCount)
+    buyRatio = 1.0 - bearMarketbuyRatio
+    #buyRatio = 1.0 - bearMarketbuyRatio - ((splitCount-buyIndex)/10.0/splitCount)
 
     sucess = buy_close(float(closePrices[row]), oneMoney  * buyRatio )
     if sucess == True:
