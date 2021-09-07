@@ -11,7 +11,7 @@ start_time_str = '2016-01-01'
 end_time_str = '2021-08-30'
 ticker = "SOXL"
 tickerHedge = "UVXY"
-#tickerHedge = "SOXS"
+tickerHedge2 = "SQQQ"
 ticker2 = "SOXX"
 
 #response = requests.get(HISTORY_DATA_URL)
@@ -22,6 +22,7 @@ closePrices = response['Close']
 closePrices2 = response2['Close']
 
 responseHedge = yf.download(tickerHedge, start=start_time_str, end=end_time_str)
+responseHedge2 = yf.download(tickerHedge2, start=start_time_str, end=end_time_str)
 
 strategies = []
 
@@ -117,15 +118,14 @@ sellRateStrategyCount = 7
 sellRateIncreaseStep = 0.5 * (1/100)
 initialSellRate = sellRateMiddle - (sellRateStrategyCount - 1)/2 * sellRateIncreaseStep
 
-splitStrategyCount = 5
+splitStrategyCount = 1
 splitIncreaseStep = 0.5
 splitMiddle = 26.745
 initialSplitCount = splitMiddle - (splitStrategyCount - 1)/2 * splitIncreaseStep
 
-
 buyOnRiseRatioStrategyCount = 5
-buyOnRiseRatioIncreaseStep = 0.01
-buyOnRiseRatioMiddle = 0.4
+buyOnRiseRatioIncreaseStep = 0.001
+buyOnRiseRatioMiddle = 0.412
 initialbuyOnRiseRatio = buyOnRiseRatioMiddle - (buyOnRiseRatioStrategyCount - 1)/2 * buyOnRiseRatioIncreaseStep
 
 
@@ -145,10 +145,10 @@ losscutIncreaseStep = 0.5 * (1/100)
 losscutMiddle = 1.0
 #losscutMiddle = 1.03
 initialLosscut = losscutMiddle - (losscutStrategyCount - 1)/2 * losscutIncreaseStep
+
 rebalanceInterval = 40
 mainAssetToHedgeInterval = 1
 hedgetToMainAssetInterval = 1
-
 rebalanceRateAtOnce = 0.1
 mainAssetToHedgeRebalanceRateAtOnce = 0.1
 hedgeToMainAssetRebalanceRateAtOnce = 0.05
@@ -157,6 +157,9 @@ hedgeToMainAssetRebalanceRateAtOnce = 0.05
 hedge = hedgeRatio * initialMoney
 totalStrategyCount = splitStrategyCount * sellRateStrategyCount * delayTradeStrategyCount * losscutStrategyCount * buyOnRiseRatioStrategyCount 
 budget = initialMoney * (1.0-hedgeRatio) / totalStrategyCount 
+
+rebalance = True
+rebalanceHedge =  True
 
 
 sell_trade_list = [None]*len(closePrices)
@@ -240,70 +243,40 @@ for delayTradeStrategyIndex in range (0, delayTradeStrategyCount ):
 
 strategyCount = len(strategies)
 balances = []
-rebalance = True
 
 mainAssetInvestmentRatios = []
-rebalanceHedge =  True
 mainAssetBalances = []
 hedgeAssetBalances = []
 
-hedgeAssetRatio = hedgeRatio
+recentHedgeAssetRatio = hedgeRatio
 balanceTotal = initialMoney
-flow_h2m = []
+h2mFlowHistory = []
 
-
-reservedBudgetForRebalance_H2M = 0
-reservedBudgetForRebalance_M2H = 0
 for dayIdx in range (0, openPrices.size):
 
 	if(hedgeRatio > destHedgeRatio ):
 		hedgeRatio -= hedgeDecreaseStep
 
-	if(reservedBudgetForRebalance_H2M > 0):
-
-		rebalancePerStrategy = reservedBudgetForRebalance_H2M / hedgeStrategyCount
-		amountTotal = 0
-		for hhh in range(0, hedgeStrategyCount):
-			amount = hedgeStrategies[hhh].reserve_budget_at_open(dayIdx, rebalancePerStrategy) # todo
-			amountTotal += hedgeStrategies[hhh].transfer_budget(amount) # todo
-			hedgeStrategies[hhh].lock_trade() # todo
-
-		print('++ hedge to main')
-		flow_h2m.append(initialHedgeMoney - amountTotal)
-		for sss in range(0, strategyCount):
-			strategies[sss].fill_budget(amountTotal / strategyCount)  # todo
-
-		reservedBudgetForRebalance_H2M = 0
-	
-	elif(reservedBudgetForRebalance_M2H > 0):
-		flow_h2m.append(initialHedgeMoney + reservedBudgetForRebalance_M2H)
-		for hhh in range(0, hedgeStrategyCount):
-			hedgeStrategies[hhh].fill_budget(reservedBudgetForRebalance_M2H / hedgeStrategyCount)
-		reservedBudgetForRebalance_M2H = 0
-	else:
-		if(len(flow_h2m) == 0):
-			flow_h2m.append(initialHedgeMoney)
-		else:
-			flow_h2m.append(flow_h2m[-1])
-
+#----------------------------------------------------------------------------------------------------------------------
+#	calc amount to rebalance between h and m
+#----------------------------------------------------------------------------------------------------------------------
+	toBeReserved_H2M = 0
+	toBeReserved_M2H = 0
 	if rebalanceHedge == True  :
 		amount = 0
-		if( hedgeAssetRatio < hedgeRatio * 0.9 ): #현재 헷지가 기준치 미달이라면
+		if( recentHedgeAssetRatio < hedgeRatio * 0.9 ): #현재 헷지가 기준치 미달이라면
 			if(dayIdx % mainAssetToHedgeInterval) == (mainAssetToHedgeInterval - 1):
-				insufficientAmount = (hedgeRatio - hedgeAssetRatio) * balanceTotal * mainAssetToHedgeRebalanceRateAtOnce
-				amount = 0
-				for sss in range(0, strategyCount):
-					transfered = strategies[sss].transfer_budget(insufficientAmount / strategyCount) # todo
-					reservedBudgetForRebalance_M2H += transfered
-				
-				print('-- main to hedge')
+				insufficientAmount = (hedgeRatio - recentHedgeAssetRatio) * balanceTotal * mainAssetToHedgeRebalanceRateAtOnce
+				toBeReserved_M2H = insufficientAmount
 
-		elif( hedgeAssetRatio > hedgeRatio * 1.2): #현재 헷지가 기준치 초과라면
+		elif( recentHedgeAssetRatio > hedgeRatio * 1.2): #현재 헷지가 기준치 초과라면
 			if(dayIdx % hedgetToMainAssetInterval) == (hedgetToMainAssetInterval - 1):
-				exceededRatio = hedgeAssetRatio - hedgeRatio 
+				exceededRatio = recentHedgeAssetRatio - hedgeRatio 
 				insufficientAmount = balanceTotal * exceededRatio * hedgeToMainAssetRebalanceRateAtOnce
-				reservedBudgetForRebalance_H2M = insufficientAmount
-
+				toBeReserved_H2M = insufficientAmount
+#----------------------------------------------------------------------------------------------------------------------
+#	start trading
+#----------------------------------------------------------------------------------------------------------------------
 	balanceTotal = 0
 	mainAssetTotalBudgets = 0
 	mainAssetBalanceTotal = 0
@@ -311,7 +284,11 @@ for dayIdx in range (0, openPrices.size):
 	if(dayIdx % 100 == 99 ):
 		print('.day..'+ str(dayIdx))
 
+	reservedBudgetForRebalance_M2H = 0
 	for si in range (0, strategyCount):
+		if toBeReserved_M2H > 0:
+			reservedBudgetForRebalance_M2H += strategies[si].transfer_budget(toBeReserved_M2H / strategyCount) # todo
+
 		strategies[si].sell_all_when_done(dayIdx)
 		strategies[si].buy(dayIdx)
 		strategies[si].post_trade(dayIdx)
@@ -319,82 +296,98 @@ for dayIdx in range (0, openPrices.size):
 		mainAssetBalanceTotal += strategies[si].calc_balance(dayIdx)
 
 	balanceTotal = mainAssetBalanceTotal
+	reservedBudgetForRebalance_H2M = 0
 	for hi in range (0, hedgeStrategyCount):
-		if(hedgeStrategies[hi].is_trade_locked() == False):
+		if( toBeReserved_H2M > 0 ):
+			rebalancePerStrategy = toBeReserved_H2M / hedgeStrategyCount
+			amount = hedgeStrategies[hi].reserve_budget_at_close(dayIdx, rebalancePerStrategy) # todo
+			reservedBudgetForRebalance_H2M += hedgeStrategies[hi].transfer_budget(amount) # todo
+		else:
 			hedgeStrategies[hi].sell_all_when_done(dayIdx)
 			hedgeStrategies[hi].buy(dayIdx)
-		else:
-			hedgeStrategies[hi].unlock_trade()
 
 		hedgeStrategies[hi].post_trade(dayIdx)
 		hedgeAssetBalanceTotal += hedgeStrategies[hi].calc_balance(dayIdx)
+#----------------------------------------------------------------------------------------------------------------------
+#
+#----------------------------------------------------------------------------------------------------------------------
 
 	balanceTotal = hedgeAssetBalanceTotal + mainAssetBalanceTotal
 	balances.append(balanceTotal)
 
-	ratio = mainAssetTotalBudgets/balanceTotal
-	assert(ratio >= -0.1)
-	mainAssetInvestmentRatios.append(1 - ratio)
+	mainAssetRatio = mainAssetTotalBudgets/balanceTotal
+	assert(mainAssetRatio >= -0.1)
+	mainAssetInvestmentRatios.append(1 - mainAssetRatio)
+
 	mainAssetBalances.append(mainAssetBalanceTotal)
 	hedgeAssetBalances.append(hedgeAssetBalanceTotal)
 
-	hedgeAssetRatio = hedgeAssetBalanceTotal / balanceTotal
+	recentHedgeAssetRatio = hedgeAssetBalanceTotal / balanceTotal
+
+#----------------------------------------------------------------------------------------------------------------------
+#	rebalancing after marget
+#----------------------------------------------------------------------------------------------------------------------
+	if(rebalance == True ):
+		if((dayIdx % rebalanceInterval == (rebalanceInterval-1))):
+			rebalanceBase = balanceTotal / strategyCount
+			sortedStrategies = sorted(strategies, key=lambda x : x.lastBalance) 	
+
+			for strategyIdx in range (0, strategyCount):
+				desire = rebalanceBase - sortedStrategies[strategyIdx].lastBalance
+				if(desire < 0):
+					break
+
+				taker = sortedStrategies[strategyIdx]
+				giver = sortedStrategies[strategyCount - strategyIdx - 1]
+				amount = giver.transfer_budget( desire * rebalanceRateAtOnce)
+				taker.fill_budget(amount)
 
 
-	if rebalance == False:
-		continue
+#----------------------------------------------------------------------------------------------------------------------
+#	deferred trans budget between h and m
+#----------------------------------------------------------------------------------------------------------------------
+	if(len(h2mFlowHistory) == 0):
+		h2mFlow = initialHedgeMoney
+	else:
+		h2mFlow = h2mFlowHistory[-1]
 
-	if(dayIdx % rebalanceInterval == (rebalanceInterval-1)):
-		rebalanceBase = balanceTotal/strategyCount
-		sortedStrategies = sorted(strategies, key=lambda x : x.lastBalance) 	
+	if(reservedBudgetForRebalance_H2M > 0):
+		h2mFlow = initialHedgeMoney - reservedBudgetForRebalance_H2M
+		for sss in range(0, strategyCount):
+			strategies[sss].fill_budget(reservedBudgetForRebalance_H2M / strategyCount)  # todo
+		reservedBudgetForRebalance_H2M = 0
+	
+	elif(reservedBudgetForRebalance_M2H > 0):
+		h2mFlow = initialHedgeMoney + reservedBudgetForRebalance_M2H
+		for hhh in range(0, hedgeStrategyCount):
+			hedgeStrategies[hhh].fill_budget(reservedBudgetForRebalance_M2H / hedgeStrategyCount)
+		reservedBudgetForRebalance_M2H = 0
 
-		#for strategyIdx in range (0, strategyCount):
-		#	print(sortedStrategies[strategyIdx].lastBalance)
-
-		for strategyIdx in range (0, strategyCount):
-			desire = rebalanceBase - sortedStrategies[strategyIdx].lastBalance
-			if(desire < 0):
-				break
-
-			taker = sortedStrategies[strategyIdx]
-			giver = sortedStrategies[strategyCount - strategyIdx - 1]
-			amount = giver.transfer_budget( desire * rebalanceRateAtOnce)
-			taker.fill_budget(amount)
-
-
+	h2mFlowHistory.append(h2mFlow)
 		#print('---------------after rebalance-----------------------[' + str(dayIdx))
 		#for strategyIdx in range (0, strategyCount):
 		#	print(sortedStrategies[strategyIdx].lastBalance)
 
-print('---------------finally -----------------------')
 
-for strategyIdx in range (0, strategyCount):
-	print(strategies[strategyIdx].lastBalance)
+
+
+
+
+
+
+
+
+#- end of trade routine -----------------------------------------------------------------------------------------------------------------------
 
 profitRatio = balances[-1]/initialMoney
 
-
 #plt.subplot(211)
 
-yticks = []
-for i in range(0, 50):
-	yticks.append(initialMoney*i)
-plt.yticks(yticks)
-
-'''
-for i in range (0, strategyCount):
-	if( i < strategyCount / 2):
-		linestyle = '--'
-	else:
-		linestyle = 'dotted'
-
-	plt.plot(strategies[i].stockData.index, strategies[i].scoreHistory, linestyle=linestyle, label = 'split: '+str(strategies[i].splitCount) +', sell rate: '+ str(strategies[i].profitRate))
-'''
 for i in range (0, len(mainAssetInvestmentRatios)):
 	mainAssetInvestmentRatios[i] *= balances[-1]
 
-for i in range (0, len(flow_h2m)):
-	flow_h2m[i] *= 10
+for i in range (0, len(h2mFlowHistory)):
+	h2mFlowHistory[i] *= 20
 
 
 
@@ -413,7 +406,7 @@ for i in range (0, len(flow_h2m)):
 
 
 
-class SmaCross(bt.SignalStrategy):
+class SimpleBTStrat(bt.SignalStrategy):
 	def __init__(self):
 		self.index = 0
 
@@ -443,7 +436,7 @@ data1 = bt.feeds.PandasData(dataname=yf.download(tickerHedge, start_time_str, en
 cerebro.adddata(data0)
 cerebro.adddata(data1)
 
-cerebro.addstrategy(SmaCross)
+cerebro.addstrategy(SimpleBTStrat)
 cerebro.broker.setcash(initialMoney)
 cerebro.broker.setcommission(0.0025)
 cerebro.run()
@@ -457,9 +450,12 @@ cerebro.plot()
 
 
 
+yticks = []
+for i in range(0, 50):
+	yticks.append(initialMoney*i)
+plt.yticks(yticks)
 
-
-plt.plot(strategies[0].stockData.index, flow_h2m)
+plt.plot(strategies[0].stockData.index, h2mFlowHistory)
 plt.plot(strategies[0].stockData.index, mainAssetInvestmentRatios, color='lightskyblue')
 plt.plot(strategies[0].stockData.index, hedgeAssetBalances, label = str(i), color='purple')
 plt.plot(strategies[0].stockData.index, mainAssetBalances, label = str(i), color='green')

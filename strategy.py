@@ -51,6 +51,7 @@ class Strategy:
 
 	def set_on_sell_fn(self, func):
 		self.on_sell = func # fn(dayIndex, price, count)
+	
 
 	def _buy_close(self, dayIndex, money) :
 		#print(money)
@@ -60,22 +61,24 @@ class Strategy:
 		if(self.budget - money < EPSILON):
 			return False
 
-		costPerStock = (self.closePrices[dayIndex] * (1.0 + self.buyFee))
+		recentPrice = self.closePrices[dayIndex - 1]
+		costPerStock = (recentPrice * (1.0 + self.buyFee))
 		count = (money / costPerStock)
 		if count <= EPSILON:
 			return False
 
 
-		self.breakEvenPrice = ( ( self.stockCount * self.breakEvenPrice ) + (count * costPerStock ) ) / (self.stockCount + count)
+		price = self.closePrices[dayIndex]
+		self.breakEvenPrice = ( ( self.stockCount * self.breakEvenPrice ) + (count * price ) ) / (self.stockCount + count)
 		self.stockCount += count
 
 		if( count > 0):
-			self.on_buy(dayIndex, self.closePrices[dayIndex], count)
+			self.on_buy(dayIndex, price, count)
 
 		if(self.budget == 0.):
 			assert(0)
 
-		self.budget -= (costPerStock * count) 
+		self.budget -= (price * count) 
 
 		if(math.fabs(self.budget) < EPSILON):
 			self.budget = 0
@@ -103,22 +106,14 @@ class Strategy:
 	def calc_balance(self, dayIndex):
 		return self.closePrices[dayIndex] * self.stockCount + self.budget
 
-	def calc_balance_by_openprice(self, dayIndex):
-		return self.openPrices[dayIndex] * self.stockCount + self.budget
-
 	def sell_all_when_done(self, dayIndex ):
 		price_and_count = (0, 0)
 		sold = 0
 		soldCount = 0
 		if self.is_tradable(dayIndex) == False: return price_and_count
 
-		prevBalance = self.lastBalance
-		profitTakingMoney = 0
-		lossCutMoney = 0
 		if( self.stockCount == 0 ):
 			return price_and_count
-
-
 
 		if(math.fabs(self.splitCount - self.curBuyProgress) <= EPSILON):
 			self.curBuyProgress = self.splitCount
@@ -139,7 +134,7 @@ class Strategy:
 
 		elif self.is_take_profit_condition(dayIndex, self.profitRate) : # take profit
 			price = self.breakEvenPrice * self.profitRate
-			sellAmountRate = self.profitSellAmountRateAtOnce * (0.5 + (progressRatio * progressRatio)*0.5)
+			#sellAmountRate = self.profitSellAmountRateAtOnce * (0.5 + (progressRatio * progressRatio)*0.5)
 			sellAmountRate = self.profitSellAmountRateAtOnce
 			soldCount = self.stockCount * sellAmountRate 
 			sold = soldCount * price
@@ -189,31 +184,22 @@ class Strategy:
 
 		return transfered
 
-	def reserve_budget_at_open(self, dayIndex, desiredReserve):
-		if(desiredReserve <= self.budget): # already reserved
-			return desiredReserve
-
-		count = desiredReserve / self.openPrices[dayIndex] 
-		if(self.stockCount < count):
-			count = self.stockCount
-
-		self.stockCount -= count
-		self.budget += count * self.openPrices[dayIndex] * (1.0 - self.sellFee);
-		if( count > 0):
-			self.on_sell(dayIndex, self.openPrices[dayIndex], count)
-
-		if(desiredReserve <= self.budget): # finally reserved
-			return desiredReserve
-
-		return self.budget
-
 	def reserve_budget_at_close(self, dayIndex, desiredReserve):
+
+		if(dayIndex == 0):
+			return 0
+
 		if(desiredReserve <= self.budget): # already reserved
 			return desiredReserve
 
-		count = desiredReserve / self.closePrices[dayIndex] 
+#--------------------------------------------------------------------------------
+#	calc count by recentPrice
+#--------------------------------------------------------------------------------
+		recentPrice = self.closePrices[dayIndex-1]
+		count = desiredReserve / recentPrice
 		if(self.stockCount < count):
 			count = self.stockCount
+#--------------------------------------------------------------------------------
 
 		self.stockCount -= count
 		self.budget += count * self.closePrices[dayIndex] * (1.0 - self.sellFee);
@@ -230,17 +216,21 @@ class Strategy:
 		self.balanceHistory.append(self.calc_balance(dayIndex))
 
 	def buy(self, dayIndex):
+		if(dayIndex == 0):
+			self.lastBalance = self.calc_balance(dayIndex)
+			return
 		if( self.budget <= 0):
 			self.lastBalance = self.calc_balance(dayIndex)
 			return
 
 		buyRatio = self.buyOnRiseRatio
 
-		curPrice = float(self.closePrices[dayIndex])
-		if self.breakEvenPrice < curPrice * 0.98 :
+		openPrice = float(self.closePrices[dayIndex-1])
+		if self.breakEvenPrice < openPrice * 0.98 :
 			if((self.curBuyProgress + buyRatio) >= self.splitCount):
 				self.lastBalance = self.calc_balance(dayIndex)
 				return
+
 			success = self._buy_close(dayIndex, self.buyAmountUnit * buyRatio)
 			if success == True:
 				self.curBuyProgress += buyRatio
@@ -256,7 +246,6 @@ class Strategy:
 
 
 		self.lastBalance = self.calc_balance(dayIndex)
-
 
 '''
 
