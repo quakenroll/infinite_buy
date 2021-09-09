@@ -168,10 +168,7 @@ class Strategy:
 		self.budget += money
 		self.lastBalance += money
 		self.curBuyProgress = self.splitCount * assetValue / self.lastBalance
-		if(self.splitCount - self.curBuyProgress < 0 ):
-			self.curBuyProgress = self.splitCount
 		self.buyAmountUnit = self.lastBalance / self.splitCount
-
 
 	def transfer_budget(self, desiredMoney):
 		transfered = 0
@@ -185,7 +182,6 @@ class Strategy:
 		if(self.budget < 0):
 			assert(0)
 
-		assert(self.splitCount - self.curBuyProgress >= 0 )
 		return transfered
 
 	def reserve_budget_at_close(self, dayIndex, desiredReserve):
@@ -210,7 +206,6 @@ class Strategy:
 		if( count > 0):
 			self.on_sell(dayIndex, self.closePrices[dayIndex], count)
 
-		assert(self.splitCount - self.curBuyProgress >= 0 )
 		if(desiredReserve <= self.budget): # finally reserved
 			return desiredReserve
 		return self.budget
@@ -231,7 +226,7 @@ class Strategy:
 		buyRatio = self.buyOnRiseRatio
 
 		openPrice = float(self.closePrices[dayIndex-1])
-		if self.breakEvenPrice < openPrice * 0.98 :
+		if self.breakEvenPrice < openPrice * 0.97 :
 			if((self.curBuyProgress + buyRatio) >= self.splitCount):
 				self.lastBalance = self.calc_balance(dayIndex)
 				return
@@ -251,99 +246,3 @@ class Strategy:
 
 
 		self.lastBalance = self.calc_balance(dayIndex)
-
-
-	def buy_weight(self, dayIndex, weight):
-		if(dayIndex == 0):
-			self.lastBalance = self.calc_balance(dayIndex)
-			return
-		if( self.budget <= 0):
-			self.lastBalance = self.calc_balance(dayIndex)
-			return
-
-		buyRatio = self.buyOnRiseRatio * weight
-
-		openPrice = float(self.closePrices[dayIndex-1])
-		if self.breakEvenPrice < openPrice * 0.98 :
-			if((self.curBuyProgress + buyRatio) >= self.splitCount):
-				self.lastBalance = self.calc_balance(dayIndex)
-				return
-
-			success = self._buy_close(dayIndex, self.buyAmountUnit * buyRatio)
-			if success == True:
-				self.curBuyProgress += buyRatio
-
-		buyRatio = (1.0 - self.buyOnRiseRatio) * weight
-		if((self.curBuyProgress + buyRatio) >= self.splitCount):
-			self.lastBalance = self.calc_balance(dayIndex)
-			return
-
-		success = self._buy_close(dayIndex, self.buyAmountUnit  * buyRatio)
-		if success == True:
-			self.curBuyProgress += buyRatio
-
-
-		self.lastBalance = self.calc_balance(dayIndex)
-		assert(self.splitCount - self.curBuyProgress >= 0 )
-
-'''
-
-	def sell_on_volatility(self, dayIndex, sampling_duration, profitRate, sellAmountRate):
-		sold = 0
-		price_and_count = (0, 0)
-		if self.is_tradable(dayIndex) == False: return price_and_count
-
-		if self.stockCount == 0:
-			return price_and_count
-
-
-		balanceCount = len(self.assetValueHistory)
-		if(balanceCount - 1 < sampling_duration):
-			sampling_duration = len(self.assetValueHistory) - 1
-			
-
-		if(sampling_duration <= 0):
-			return price_and_count 
-
-		avg = 0
-		for i in range(0, sampling_duration):
-			avg += self.assetValueHistory[balanceCount - 2 - i]
-
-		avg = avg / sampling_duration
-		if(avg == 0):
-			return price_and_count
-
-		prevBalance = self.lastBalance
-
-		#amount = sellAmountRate * curBalance
-		#stockCount = amount / (self.openPrices[dayIndex] * (1.0 - self.sellFee))
-		curAssetValue = self.stockCount * self.closePrices[dayIndex]
-		stockCount = self.stockCount * sellAmountRate
-
-		if(self.stockCount < stockCount):
-			stockCount = self.stockCount
-
-		if (((curAssetValue - avg) / avg + 1) > profitRate ):
-			sold = (stockCount * float(self.closePrices[dayIndex])) * (1.0 - self.sellFee)
-			price_and_count = (self.closePrices[dayIndex], stockCount)
-
-		elif self.is_take_profit_condition(dayIndex, self.profitRate) : # take profit
-			price = self.breakEvenPrice * self.profitRate
-			sold = stockCount * price * (1.0 - self.sellFee)
-			price_and_count = (price, stockCount)
-
-
-		if sold > 0:
-			self.budget += sold
-			self.stockCount -= stockCount
-			if(math.fabs(self.stockCount) < EPSILON):
-				self.stockCount = 0
-
-			if(self.stockCount == 0):
-				self.breakEvenPrice = 0
-				
-			self.lastBalance = self.budget
-			self.on_sell(dayIndex, price_and_count[0], price_and_count[1])
-		
-		return price_and_count
-'''

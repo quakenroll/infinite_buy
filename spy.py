@@ -8,12 +8,12 @@ import math
 
 #start_time_str = '2016-01-01'
 #end_time_str = '2021-06-20'
-start_time_str = '2016-01-01'
+start_time_str = '2018-01-21'
 end_time_str = '2021-08-30'
-ticker = "SPXL"
+ticker = "LABU"
 tickerHedge = "UVXY"
 tickerHedge2 = "SQQQ"
-ticker2 = "SPY"
+ticker2 = "LABU"
 
 #response = requests.get(HISTORY_DATA_URL)
 response = yf.download(ticker, start=start_time_str, end=end_time_str)
@@ -114,7 +114,7 @@ hedgeToMainAssetRebalanceRateAtOnce = 1
 '''
 
 initialMoney = 100000000
-sellRateMiddle = 1.07
+sellRateMiddle = 1.15
 sellRateStrategyCount = 7
 sellRateIncreaseStep = 0.5 * (1/100)
 initialSellRate = sellRateMiddle - (sellRateStrategyCount - 1)/2 * sellRateIncreaseStep

@@ -4,14 +4,15 @@ import backtrader as bt
 from datetime import datetime
 import matplotlib.pyplot as plt
 import strategy as strat
+import math
 
-#start_time_str = '2016-01-01'
-#end_time_str = '2021-06-20'
 start_time_str = '2016-01-01'
-end_time_str = '2021-08-30'
+end_time_str = '2021-08-31'
+#start_time_str = '2010-03-17'
+#end_time_str = '2013-09-30'
 ticker = "SOXL"
-tickerHedge = "UVXY"
-tickerHedge2 = "SQQQ"
+tickerHedge = "SOXL"
+tickerHedge2 = "SOXL"
 ticker2 = "SOXX"
 
 #response = requests.get(HISTORY_DATA_URL)
@@ -200,6 +201,7 @@ def on_sell(index, price, count):
 initialHedgeMoney = initialMoney * (hedgeRatio)
 hedgeStrategyCount = int(initialHedgeMoney / budget)
 hedgeStrategies = []
+
 for i in range (0, hedgeStrategyCount ):
 	s = strat.Strategy(stockData=responseHedge, 
 				budget=budget, 
@@ -215,7 +217,23 @@ for i in range (0, hedgeStrategyCount ):
 	hedgeStrategies.append(s)
 
 
+def calc_moving_average(sampling_count, index, data_list):
+	assert(sampling_count > 0)
 
+	count = len(data_list)
+	if( count >= sampling_count + index):
+		count = sampling_count
+
+	sumVal = 0
+	for i in range(0, count):
+		sumVal += data_list[index - i]
+
+	return sumVal / count
+
+	
+
+
+buyWeigt = 1
 ##########################################################################################
 
 for delayTradeStrategyIndex in range (0, delayTradeStrategyCount ):
@@ -247,6 +265,9 @@ balances = []
 mainAssetInvestmentRatios = []
 mainAssetBalances = []
 hedgeAssetBalances = []
+
+scores = []
+scoresDiff = []
 
 recentHedgeAssetRatio = hedgeRatio
 balanceTotal = initialMoney
@@ -285,13 +306,16 @@ for dayIdx in range (0, openPrices.size):
 		print('.day..'+ str(dayIdx))
 
 	reservedBudgetForRebalance_M2H = 0
+
 	for si in range (0, strategyCount):
 		if toBeReserved_M2H > 0:
 			reservedBudgetForRebalance_M2H += strategies[si].transfer_budget(toBeReserved_M2H / strategyCount) # todo
 
 		strategies[si].sell_all_when_done(dayIdx)
-		strategies[si].buy(dayIdx)
+		strategies[si].buy_weight(dayIdx, buyWeigt)
 		strategies[si].post_trade(dayIdx)
+
+
 		mainAssetTotalBudgets += strategies[si].budget
 		mainAssetBalanceTotal += strategies[si].calc_balance(dayIdx)
 
@@ -311,6 +335,54 @@ for dayIdx in range (0, openPrices.size):
 #----------------------------------------------------------------------------------------------------------------------
 #
 #----------------------------------------------------------------------------------------------------------------------
+	score = 0
+	lastSm = 0
+	minDuration = 10
+	#maxDuration = int(splitMiddle) * 2
+	weight = 1
+	maxDuration = 30
+	lastSamplingDays = 0
+	for i in range(minDuration, maxDuration):
+		ri = maxDuration + minDuration - i
+		days = int(math.pow(1.1, ri))
+		if(lastSamplingDays == days):
+			continue
+
+		lastSamplingDays = days
+		sm = calc_moving_average( days, dayIdx-2, closePrices2)
+
+		if(lastSm == 0): 
+			lastSm = sm
+
+		score += (lastSm - sm) * weight
+
+	sign = score / math.fabs(score)
+	score = math.log(math.fabs(score)) * sign
+	
+	if(dayIdx == 0) :
+		scoresDiff.append(0)
+	else:
+		scoreDiff = score - scores[-1]
+		if math.fabs(scoreDiff) > 20:
+			scoresDiff.append(0)
+		else:
+			scoresDiff.append(scoreDiff)
+
+
+	if(dayIdx > 200):
+		buyWeigt = 1 - score / 49
+
+	if(math.fabs(score) > 200):
+		score = 0
+
+	scores.append(score)
+	print(score)
+
+#	if(score < -53.663):
+#		scores.append(mainAssetBalanceTotal)
+#	else:
+#		scores.append(0)
+
 
 	balanceTotal = hedgeAssetBalanceTotal + mainAssetBalanceTotal
 	balances.append(balanceTotal)
@@ -433,13 +505,16 @@ cerebro = bt.Cerebro()
 
 data0 = bt.feeds.PandasData(dataname=yf.download(ticker, start_time_str, end_time_str))
 data1 = bt.feeds.PandasData(dataname=yf.download(tickerHedge, start_time_str, end_time_str))
+data0.plotinfo.plot = False
+data1.plotinfo.plot = False
 cerebro.adddata(data0)
 cerebro.adddata(data1)
 
 cerebro.addstrategy(SimpleBTStrat)
 cerebro.broker.setcash(initialMoney)
 cerebro.broker.setcommission(0.0025)
-cerebro.run()
+cerebro.addobserver(bt.observers.Broker)
+cerebro.run(stdstats=False)
 cerebro.plot()
 #################################################################################
 
@@ -461,9 +536,17 @@ plt.plot(strategies[0].stockData.index, hedgeAssetBalances, label = str(i), colo
 plt.plot(strategies[0].stockData.index, mainAssetBalances, label = str(i), color='green')
 
 mul = initialMoney/closePrices2[0]
+
+for i in range(0, len(scores)):
+	scores[i] *= initialMoney / 20
+	scoresDiff[i]*= initialMoney / 20
+
+
 #mul = balances[-1]/closePrices2[-1]
 plt.plot(strategies[0].stockData.index, closePrices2 * mul, color='grey')
 plt.plot(strategies[0].stockData.index, balances, color='red')
+plt.plot(strategies[0].stockData.index, scores, color='purple')
+plt.plot(strategies[0].stockData.index, scoresDiff, color='red')
 plt.tight_layout(pad=1.08, h_pad=None, w_pad=None, rect=None)
 plt.grid(True)
 
