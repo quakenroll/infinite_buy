@@ -140,7 +140,7 @@ sellRateIncreaseStep = 0.5 * (1/100)
 initialSellRate = sellRateMiddle - (sellRateStrategyCount - 1)/2 * sellRateIncreaseStep
 
 splitStrategyCount = 13
-splitIncreaseStep = 1
+splitIncreaseStep = 0.5
 splitMiddle = 30
 initialSplitCount = splitMiddle - (splitStrategyCount - 1)/2 * splitIncreaseStep
 
