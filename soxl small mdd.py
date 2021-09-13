@@ -6,14 +6,21 @@ import matplotlib.pyplot as plt
 import strategy as strat
 import math
 
-start_time_str = '2016-01-01'
-end_time_str = '2021-08-31'
+#start_time_str = '2015-03-01'
+#end_time_str = '2021-08-31'
+
+#start_time_str = '2019-04-01'
+#end_time_str = '2021-08-31'
+
+start_time_str = '2011-07-01'
+end_time_str = '2019-08-31'
 #start_time_str = '2010-03-17'
-#end_time_str = '2013-09-30'
-ticker = "SOXL"
-tickerHedge = "SOXL"
+#end_time_str = '2014-09-17'
+ticker = "TQQQ"
+#tickerHedge = "UVXY"
+tickerHedge = "TLT"
 tickerHedge2 = "SOXL"
-ticker2 = "SOXX"
+ticker2 = "QQQ"
 
 #response = requests.get(HISTORY_DATA_URL)
 response = yf.download(ticker, start=start_time_str, end=end_time_str)
@@ -126,16 +133,17 @@ initialSplitCount = splitMiddle - (splitStrategyCount - 1)/2 * splitIncreaseStep
 
 buyOnRiseRatioStrategyCount = 5
 buyOnRiseRatioIncreaseStep = 0.001
+#buyOnRiseRatioMiddle = 0.412
 buyOnRiseRatioMiddle = 0.412
 initialbuyOnRiseRatio = buyOnRiseRatioMiddle - (buyOnRiseRatioStrategyCount - 1)/2 * buyOnRiseRatioIncreaseStep
 
 
 delayTradeStrategyCount = 10
 delayTradeStep = 15
-buyMoreUnderLossRatio = 0.00
+buyMoreUnderLossRatio = 0.0
 
-initialHedgeRatio = 0.05
-destHedgeRatio = 0.05
+initialHedgeRatio = 0.0
+destHedgeRatio = 0.0
 hedgeRatioDecreaseTerm = 120
 hedgeDecreaseStep = (initialHedgeRatio - destHedgeRatio)/hedgeRatioDecreaseTerm
 hedgeRatio = initialHedgeRatio
@@ -219,20 +227,79 @@ for i in range (0, hedgeStrategyCount ):
 
 def calc_moving_average(sampling_count, index, data_list):
 	assert(sampling_count > 0)
+	if(index == 0):
+		return data_list[index]
 
-	count = len(data_list)
-	if( count >= sampling_count + index):
-		count = sampling_count
+	sc = sampling_count
+	if( (index + 1) <  sampling_count ):
+		sc = index + 1
 
 	sumVal = 0
-	for i in range(0, count):
+	for i in range(0, sc):
 		sumVal += data_list[index - i]
 
-	return sumVal / count
+	return sumVal / sc
 
+def calc_average_profit_during_recent_(sampling_count, days, index, data_list):
+	assert(days > 0 and sampling_count > 0)
+
+	count = len(data_list)
+	assert(index + 1 >= sampling_count + days)
+
+	sumVal = 0
+
+	profitSum = 0
+	for i in range(0, sampling_count):
+		diff = data_list[index - i] - data_list[index - days - i]
+		profitSum += diff / data_list[index - i]
 	
+	averageProfit = profitSum / sampling_count
+
+	return averageProfit
+
+def calc_median_average_profit_during_recent_(sampling_count, days, index, data_list):
+	assert(days > 0 and sampling_count > 0)
+
+	count = len(data_list)
+	assert(index + 1 >= sampling_count + days)
+
+	sumVal = 0
+
+	profitSum = 0
+	profits = []
+	for i in range(0, sampling_count):
+		diff = data_list[index - i] - data_list[index - days - i]
+		profits.append(diff / data_list[index - i])
+
+	return profits[int(sampling_count/2)]
 
 
+def calc_range_average_profit_during_recent_(sampling_count, sampling_begin, sampling_end, days, index, data_list):
+	assert(days > 0 and sampling_count > 0)
+
+	count = len(data_list)
+	assert(index + 1 >= sampling_count + days)
+
+	sumVal = 0
+
+	profitSum = 0
+	profits = []
+	for i in range(0, sampling_count):
+		diff = data_list[index - i] - data_list[index - days - i]
+		profits.append(diff / data_list[index - i])
+
+	topIndex = int(sampling_begin * sampling_count)
+	bottomIndex = int(sampling_end* sampling_count)
+	
+	profits.sort(reverse=True)
+
+	sumVal = 0
+	for i in range(topIndex, bottomIndex):
+		sumVal += profits[i]
+	return 	sumVal / (bottomIndex - topIndex)
+
+
+profitRateRatio = 1
 buyWeigt = 1
 ##########################################################################################
 
@@ -273,6 +340,15 @@ recentHedgeAssetRatio = hedgeRatio
 balanceTotal = initialMoney
 h2mFlowHistory = []
 
+
+averageProfitSamplingCount = 400
+desiredTakeProfitDurationRatio = 0.5
+averageProfitDays = int(splitMiddle*desiredTakeProfitDurationRatio)
+tradeDelayForStatistics = averageProfitDays + averageProfitSamplingCount
+averageProfits = []
+lastAverageProfits = 0.145
+minProfitExpectation = 0.99
+
 for dayIdx in range (0, openPrices.size):
 
 	if(hedgeRatio > destHedgeRatio ):
@@ -311,8 +387,19 @@ for dayIdx in range (0, openPrices.size):
 		if toBeReserved_M2H > 0:
 			reservedBudgetForRebalance_M2H += strategies[si].transfer_budget(toBeReserved_M2H / strategyCount) # todo
 
-		strategies[si].sell_all_when_done(dayIdx)
-		strategies[si].buy_weight(dayIdx, buyWeigt)
+
+		if(tradeDelayForStatistics < dayIdx):
+			var = strategies[si].initialProfitRate - sellRateMiddle
+			desiredProfit = 1 + (averageProfits[dayIdx - 1])
+			if(desiredProfit < minProfitExpectation):
+				desiredProfit = minProfitExpectation
+
+			strategies[si].profitRate = desiredProfit + var
+			#strategies[si].profitRate *= profitRateRatio
+			strategies[si].sell_all_when_done(dayIdx)
+			#strategies[si].buy_weight(dayIdx, buyWeigt)
+			strategies[si].buy_weight(dayIdx, 1)
+
 		strategies[si].post_trade(dayIdx)
 
 
@@ -322,25 +409,42 @@ for dayIdx in range (0, openPrices.size):
 	balanceTotal = mainAssetBalanceTotal
 	reservedBudgetForRebalance_H2M = 0
 	for hi in range (0, hedgeStrategyCount):
-		if( toBeReserved_H2M > 0 ):
-			rebalancePerStrategy = toBeReserved_H2M / hedgeStrategyCount
-			amount = hedgeStrategies[hi].reserve_budget_at_close(dayIdx, rebalancePerStrategy) # todo
-			reservedBudgetForRebalance_H2M += hedgeStrategies[hi].transfer_budget(amount) # todo
-		else:
-			hedgeStrategies[hi].sell_all_when_done(dayIdx)
-			hedgeStrategies[hi].buy(dayIdx)
+		if(tradeDelayForStatistics < dayIdx):
+			if( toBeReserved_H2M > 0 ):
+				rebalancePerStrategy = toBeReserved_H2M / hedgeStrategyCount
+				amount = hedgeStrategies[hi].reserve_budget_at_close(dayIdx, rebalancePerStrategy) # todo
+				reservedBudgetForRebalance_H2M += hedgeStrategies[hi].transfer_budget(amount) # todo
+			else:
+				hedgeStrategies[hi].sell_all_when_done(dayIdx)
+				hedgeStrategies[hi].buy(dayIdx)
 
 		hedgeStrategies[hi].post_trade(dayIdx)
 		hedgeAssetBalanceTotal += hedgeStrategies[hi].calc_balance(dayIdx)
+
 #----------------------------------------------------------------------------------------------------------------------
-#
+#	calc averageProfit
+#----------------------------------------------------------------------------------------------------------------------
+
+	if(dayIdx > tradeDelayForStatistics):
+		#averageProfit = calc_median_average_profit_during_recent_(averageProfitSamplingCount, averageProfitDays, dayIdx, closePrices )
+		#averageProfit = calc_average_profit_during_recent_(averageProfitSamplingCount, averageProfitDays, dayIdx, closePrices )
+		averageProfit = calc_range_average_profit_during_recent_(averageProfitSamplingCount, 0.01, 0.1, averageProfitDays, dayIdx, closePrices )
+		averageProfit = averageProfit * 0.005 + lastAverageProfits * 0.995
+
+		lastAverageProfits = averageProfit
+		averageProfits.append(averageProfit)
+	else:
+		averageProfits.append(0)
+
+#----------------------------------------------------------------------------------------------------------------------
+#	calc score
 #----------------------------------------------------------------------------------------------------------------------
 	score = 0
 	lastSm = 0
 	minDuration = 10
 	#maxDuration = int(splitMiddle) * 2
 	weight = 1
-	maxDuration = 30
+	maxDuration = 35
 	lastSamplingDays = 0
 	for i in range(minDuration, maxDuration):
 		ri = maxDuration + minDuration - i
@@ -349,25 +453,26 @@ for dayIdx in range (0, openPrices.size):
 			continue
 
 		lastSamplingDays = days
-		sm = calc_moving_average( days, dayIdx-2, closePrices2)
+		sm = calc_moving_average( days, dayIdx, closePrices2)
 
 		if(lastSm == 0): 
 			lastSm = sm
 
 		score += (lastSm - sm) * weight
 
-	sign = score / math.fabs(score)
-	score = math.log(math.fabs(score)) * sign
+	if(score != 0):
+		sign = score / math.fabs(score)
+		score = math.log(math.fabs(score), math.e) * sign
+	else:
+		score = 0
 	
 	if(dayIdx == 0) :
 		scoresDiff.append(0)
 	else:
 		scoreDiff = score - scores[-1]
-		if math.fabs(scoreDiff) > 20:
-			scoresDiff.append(0)
-		else:
-			scoresDiff.append(scoreDiff)
-
+		scoresDiff.append(scoreDiff)
+		
+		profitRateRatio = (100 - scoreDiff)/100
 
 	if(dayIdx > 200):
 		buyWeigt = 1 - score / 49
@@ -376,7 +481,6 @@ for dayIdx in range (0, openPrices.size):
 		score = 0
 
 	scores.append(score)
-	print(score)
 
 #	if(score < -53.663):
 #		scores.append(mainAssetBalanceTotal)
@@ -529,7 +633,7 @@ yticks = []
 for i in range(0, 50):
 	yticks.append(initialMoney*i)
 plt.yticks(yticks)
-
+plt.subplot(311)
 plt.plot(strategies[0].stockData.index, h2mFlowHistory)
 plt.plot(strategies[0].stockData.index, mainAssetInvestmentRatios, color='lightskyblue')
 plt.plot(strategies[0].stockData.index, hedgeAssetBalances, label = str(i), color='purple')
@@ -537,20 +641,31 @@ plt.plot(strategies[0].stockData.index, mainAssetBalances, label = str(i), color
 
 mul = initialMoney/closePrices2[0]
 
-for i in range(0, len(scores)):
-	scores[i] *= initialMoney / 20
-	scoresDiff[i]*= initialMoney / 20
+#for i in range(0, len(scores)):
+#	scores[i] *= balanceTotal / 15
+#	scoresDiff[i]*= balanceTotal / 15
 
 
 #mul = balances[-1]/closePrices2[-1]
 plt.plot(strategies[0].stockData.index, closePrices2 * mul, color='grey')
 plt.plot(strategies[0].stockData.index, balances, color='red')
+plt.tight_layout(pad=1.08, h_pad=None, w_pad=None, rect=None)
+plt.grid(True)
+
+
+plt.subplot(312)
 plt.plot(strategies[0].stockData.index, scores, color='purple')
 plt.plot(strategies[0].stockData.index, scoresDiff, color='red')
 plt.tight_layout(pad=1.08, h_pad=None, w_pad=None, rect=None)
 plt.grid(True)
 
 
+plt.subplot(313)
+
+plt.plot(strategies[0].stockData.index, averageProfits, color='purple')
+
+plt.tight_layout(pad=1.08, h_pad=None, w_pad=None, rect=None)
+plt.grid(True)
 #plt.subplot(211)
 #plt.plot(strategies[i].stockData.index, hedgeAssetBalances, label = str(i))
 

@@ -10,10 +10,10 @@ start_time_str = '2011-10-07'
 end_time_str = '2021-08-31'
 #start_time_str = '2010-03-17'
 #end_time_str = '2013-09-30'
-ticker = "QLD"
+ticker = "SOXL"
 tickerHedge = "UUP"
 tickerHedge2 = "SOXL"
-ticker2 = "QQQ"
+ticker2 = "SOXX"
 
 #response = requests.get(HISTORY_DATA_URL)
 response = yf.download(ticker, start=start_time_str, end=end_time_str)

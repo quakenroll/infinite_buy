@@ -1,19 +1,33 @@
 from os import curdir
+from time import strftime
 import yfinance as yf
 import backtrader as bt
-from datetime import datetime
+from datetime import datetime, timedelta
 import matplotlib.pyplot as plt
 import strategy as strat
 import math
 
-start_time_str = '2011-10-07'
-end_time_str = '2021-08-31'
+start_time_str = '2010-03-08'
+end_time_str = '2011-09-07'
+#end_time_str = '2021-08-31'
 #start_time_str = '2010-03-17'
 #end_time_str = '2013-09-30'
-ticker = "QLD"
-tickerHedge = "UUP"
-tickerHedge2 = "SOXL"
+ticker = "TQQQ"
+tickerHedge = "TMF"
+tickerHedge2 = "TMF"
 ticker2 = "QQQ"
+
+
+for i in range(0, 10):
+	beginDate = datetime(2010 + i, 3, 8)
+	endDate = beginDate + timedelta(days=365)
+
+	strDateBegin = beginDate.strftime('%Y-%m-%d')
+	strDateEnd = endDate.strftime('%Y-%m-%d')
+
+	print(strDateBegin)
+	print(strDateEnd)
+
 
 #response = requests.get(HISTORY_DATA_URL)
 response = yf.download(ticker, start=start_time_str, end=end_time_str)
@@ -113,14 +127,14 @@ mainAssetToHedgeRebalanceRateAtOnce = 0.05
 hedgeToMainAssetRebalanceRateAtOnce = 1
 '''
 
-initialMoney = 10000000
+initialMoney = 100000000
 sellRateMiddle = 3.0
 sellRateStrategyCount = 200
 sellRateIncreaseStep = 0.5 * (1/100)
 initialSellRate = sellRateMiddle - (sellRateStrategyCount - 1)/2 * sellRateIncreaseStep
 
-splitStrategyCount = 1
-splitIncreaseStep = 0.5
+splitStrategyCount = 13
+splitIncreaseStep = 1
 splitMiddle = 26.8
 initialSplitCount = splitMiddle - (splitStrategyCount - 1)/2 * splitIncreaseStep
 
@@ -131,12 +145,12 @@ initialbuyOnRiseRatio = buyOnRiseRatioMiddle - (buyOnRiseRatioStrategyCount - 1)
 
 
 delayTradeStrategyCount = 1
-delayTradeStep = 15
+delayTradeStep = 12
 buyMoreUnderLossRatio = 0.00
 
-initialHedgeRatio = 0.2
-destHedgeRatio = 0.2
-hedgeRatioDecreaseTerm = 120
+initialHedgeRatio = 0.15
+destHedgeRatio = 0.15
+hedgeRatioDecreaseTerm = 220
 hedgeDecreaseStep = (initialHedgeRatio - destHedgeRatio)/hedgeRatioDecreaseTerm
 hedgeRatio = initialHedgeRatio
 
@@ -148,11 +162,11 @@ losscutMiddle = 1.0
 initialLosscut = losscutMiddle - (losscutStrategyCount - 1)/2 * losscutIncreaseStep
 
 rebalanceInterval = 60
-mainAssetToHedgeInterval = 5
-hedgetToMainAssetInterval = 5
+mainAssetToHedgeInterval = 1 
+hedgetToMainAssetInterval = 1
 rebalanceRateAtOnce = 0.1
-mainAssetToHedgeRebalanceRateAtOnce = 0.1 * mainAssetToHedgeInterval
-hedgeToMainAssetRebalanceRateAtOnce = 0.05 * hedgetToMainAssetInterval
+mainAssetToHedgeRebalanceRateAtOnce = 0.05
+hedgeToMainAssetRebalanceRateAtOnce = 0.01
 
 
 hedge = hedgeRatio * initialMoney
@@ -203,19 +217,22 @@ hedgeStrategyCount = int(initialHedgeMoney / budget)
 hedgeStrategies = []
 
 for i in range (0, hedgeStrategyCount ):
-	s = strat.Strategy(stockData=responseHedge, 
+	data = responseHedge
+	#if(i % 2 == 1):
+	#	data = responseHedge2
+	hs = strat.Strategy(stockData=data, 
 				budget=budget, 
-				splitCount=10+10/hedgeStrategyCount * i, 
-				profitRate=5+5/hedgeStrategyCount * i, 
-				buyOnRiseRatio=0.2,
+				splitCount=20, 
+				profitRate=5000, 
+				buyOnRiseRatio=0.0,
 				delayTrade=0, 
 				buyMoreUnderLossRatio =0,
 				minimumLosscutRate=0.85,
 				logTrade=False, name='hedge')
-	s.set_on_buy_fn(on_hedge_buy)
-	s.set_on_sell_fn(on_hedge_sell)
-	s.buyOrderPriceFactor = 1.06
-	hedgeStrategies.append(s)
+	hs.set_on_buy_fn(on_hedge_buy)
+	hs.set_on_sell_fn(on_hedge_sell)
+	hs.buyOrderPriceFactor = 1.06
+	hedgeStrategies.append(hs)
 
 def calc_moving_average(sampling_count, index, data_list):
 	assert(sampling_count > 0)
@@ -294,12 +311,12 @@ for dayIdx in range (0, openPrices.size):
 	toBeReserved_M2H = 0
 	if rebalanceHedge == True  :
 		amount = 0
-		if( recentHedgeAssetRatio < hedgeRatio * 0.75 ): #현재 헷지가 기준치 미달이라면
+		if( recentHedgeAssetRatio < hedgeRatio * 0.85 ): #현재 헷지가 기준치 미달이라면
 			if(dayIdx % mainAssetToHedgeInterval) == (mainAssetToHedgeInterval - 1):
 				insufficientAmount = (hedgeRatio - recentHedgeAssetRatio) * balanceTotal * mainAssetToHedgeRebalanceRateAtOnce
 				toBeReserved_M2H = insufficientAmount
 
-		elif( recentHedgeAssetRatio > hedgeRatio * 1.2): #현재 헷지가 기준치 초과라면
+		elif( recentHedgeAssetRatio > hedgeRatio * 1.05): #현재 헷지가 기준치 초과라면
 			if(dayIdx % hedgetToMainAssetInterval) == (hedgetToMainAssetInterval - 1):
 				exceededRatio = recentHedgeAssetRatio - hedgeRatio 
 				insufficientAmount = balanceTotal * exceededRatio * hedgeToMainAssetRebalanceRateAtOnce
@@ -494,6 +511,23 @@ class SimpleBTStrat(bt.SignalStrategy):
 		self.index = 0
 		self.mainAssetLongPositions = 0
 
+	'''
+	def notify_order(self, order):
+		if order.status == order.Accepted:
+			print('Order Accepted')
+		if order.status == order.Completed:
+			print('Order Completed')
+		if order.status == order.Canceled:
+			print('Order Canceled')
+
+		if order.status == order.Rejected:
+			print('WARNING! Order Rejected')
+
+	def notify_trade(self, trade):
+		date = self.data.datetime.datetime()
+		if trade.isclosed:
+			print('trade.isclosed')
+	'''
 	def next(self):
 		if sell_trade_list[self.index] is not None:
 			for price, count in sell_trade_list[self.index].items():
