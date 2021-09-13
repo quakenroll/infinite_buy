@@ -135,7 +135,7 @@ hedgeToMainAssetRebalanceRateAtOnce = 1
 '''
 
 sellRateMiddle = 3.0
-sellRateStrategyCount = 120
+sellRateStrategyCount = 80
 sellRateIncreaseStep = 0.5 * (1/100)
 initialSellRate = sellRateMiddle - (sellRateStrategyCount - 1)/2 * sellRateIncreaseStep
 
@@ -154,8 +154,8 @@ delayTradeStrategyCount = 1
 delayTradeStep = 12
 buyMoreUnderLossRatio = 0.00
 
-initialHedgeRatio = 0.0
-destHedgeRatio = 0.0
+initialHedgeRatio = 0.2
+destHedgeRatio = 0.2
 hedgeRatioDecreaseTerm = 220
 hedgeDecreaseStep = (initialHedgeRatio - destHedgeRatio)/hedgeRatioDecreaseTerm
 hedgeRatio = initialHedgeRatio
