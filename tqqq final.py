@@ -141,7 +141,7 @@ initialSellRate = sellRateMiddle - (sellRateStrategyCount - 1)/2 * sellRateIncre
 
 splitStrategyCount = 13
 splitIncreaseStep = 1
-splitMiddle = 28.8
+splitMiddle = 30
 initialSplitCount = splitMiddle - (splitStrategyCount - 1)/2 * splitIncreaseStep
 
 buyOnRiseRatioStrategyCount = 1
@@ -154,8 +154,8 @@ delayTradeStrategyCount = 1
 delayTradeStep = 12
 buyMoreUnderLossRatio = 0.00
 
-initialHedgeRatio = 0.
-destHedgeRatio = 0.
+initialHedgeRatio = 0.0
+destHedgeRatio = 0.0
 hedgeRatioDecreaseTerm = 220
 hedgeDecreaseStep = (initialHedgeRatio - destHedgeRatio)/hedgeRatioDecreaseTerm
 hedgeRatio = initialHedgeRatio
