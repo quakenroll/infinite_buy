@@ -154,8 +154,8 @@ delayTradeStrategyCount = 1
 delayTradeStep = 12
 buyMoreUnderLossRatio = 0.00
 
-initialHedgeRatio = 0.2
-destHedgeRatio = 0.2
+initialHedgeRatio = 0.
+destHedgeRatio = 0.
 hedgeRatioDecreaseTerm = 220
 hedgeDecreaseStep = (initialHedgeRatio - destHedgeRatio)/hedgeRatioDecreaseTerm
 hedgeRatio = initialHedgeRatio
