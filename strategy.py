@@ -59,10 +59,13 @@ class Strategy:
 	def _buy_close(self, dayIndex, money) :
 		#print(money)
 		
-		if(self.budget <= EPSILON):
+		if(self.budget <= -EPSILON):
 			return False
 
-		if(self.budget - money < EPSILON):
+		if(self.budget - money < -EPSILON):
+			money = self.budget
+			
+		if(money <= 0):
 			return False
 
 		#recentPrice = self.closePrices[dayIndex-1]
@@ -70,7 +73,7 @@ class Strategy:
 		orderPrice = recentPrice * (self.buyOrderPriceFactor)
 		costPerStock = orderPrice * (1.0 + self.buyFee)
 		count = (money / costPerStock) * 1.0
-		if count <= EPSILON:
+		if count <= -EPSILON:
 			return False
 
 		if(orderPrice < self.closePrices[dayIndex]):
@@ -188,6 +191,12 @@ class Strategy:
 			self.curBuyProgress = self.splitCount
 		self.buyAmountUnit = self.lastBalance / self.splitCount
 
+	def fill_budget_and_buy_all(self, money, dayIndex):
+		self.fill_budget(money)
+
+	def buy_all(self, dayIndex):
+		self._buy_close(dayIndex=dayIndex, money=self.budget)
+		
 
 	def transfer_budget(self, desiredMoney):
 		transfered = 0
@@ -253,7 +262,7 @@ class Strategy:
 
 		buyRatio = 1
 
-		if((self.curBuyProgress + buyRatio) >= self.splitCount):
+		if((self.curBuyProgress + buyRatio) > self.splitCount):
 			self.lastBalance = self.calc_balance(dayIndex)
 			return
 

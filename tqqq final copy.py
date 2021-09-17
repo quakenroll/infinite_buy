@@ -13,8 +13,12 @@ end_time_str = '2011-09-07'
 #start_time_str = '2010-03-17'
 #end_time_str = '2013-09-30'
 ticker = "TQQQ"
-tickerHedge = "TMF"
-tickerHedge2 = "TMF"
+tickerHedge = "TLT"
+tickerHedge2 = "TLT"
+tickerHedge3 = "TIP"
+tickerHedge4 = "TMF"
+tickerHedge5 = "UUP"
+
 ticker2 = "QQQ"
 initialMoney = 100000000
 outperform_rates_outperform_chart = []
@@ -22,8 +26,9 @@ outperform_orig_outperform_chart = []
 outperform_model_outperform_chart = []
 
 
-beginDate = datetime(2010, 3, 8)
-endDate = datetime(2010, 1, 8)
+beginDate = None
+#endDate = datetime(2010, 3, 8)
+endDate = datetime(2011, 10, 8)
 toggle = 0
 #for yy in range(0, 20):
 for yy in range(0, 1):
@@ -52,6 +57,9 @@ for yy in range(0, 1):
 
 	responseHedge = yf.download(tickerHedge, start=strDateBegin, end=strDateEnd)
 	responseHedge2 = yf.download(tickerHedge2, start=strDateBegin, end=strDateEnd)
+	responseHedge3 = yf.download(tickerHedge3, start=strDateBegin, end=strDateEnd)
+	responseHedge4 = yf.download(tickerHedge4, start=strDateBegin, end=strDateEnd)
+	responseHedge5 = yf.download(tickerHedge5, start=strDateBegin, end=strDateEnd)
 
 	strategies = []
 
@@ -141,14 +149,14 @@ for yy in range(0, 1):
 	hedgeToMainAssetRebalanceRateAtOnce = 1
 	'''
 
-	sellRateMiddle = 3.0
-	sellRateStrategyCount = 80
+	sellRateMiddle = 300.0
+	sellRateStrategyCount = 1
 	sellRateIncreaseStep = 0.5 * (1/100)
 	initialSellRate = sellRateMiddle - (sellRateStrategyCount - 1)/2 * sellRateIncreaseStep
 
-	splitStrategyCount = 15
+	splitStrategyCount = 1
 	splitIncreaseStep = 0.5
-	splitMiddle = 30
+	splitMiddle = 1
 	initialSplitCount = splitMiddle - (splitStrategyCount - 1)/2 * splitIncreaseStep
 
 	buyOnRiseRatioStrategyCount = 1
@@ -161,8 +169,8 @@ for yy in range(0, 1):
 	delayTradeStep = 12
 	buyMoreUnderLossRatio = 0.00
 
-	initialHedgeRatio = 0.2
-	destHedgeRatio = 0.2
+	initialHedgeRatio = 0.6
+	destHedgeRatio = 0.6
 	hedgeRatioDecreaseTerm = 220
 	hedgeDecreaseStep = (initialHedgeRatio - destHedgeRatio)/hedgeRatioDecreaseTerm
 	hedgeRatio = initialHedgeRatio
@@ -175,18 +183,18 @@ for yy in range(0, 1):
 	initialLosscut = losscutMiddle - (losscutStrategyCount - 1)/2 * losscutIncreaseStep
 
 	rebalanceInterval = 60
-	mainAssetToHedgeInterval = 10
+	mainAssetToHedgeInterval = 1
 	hedgetToMainAssetInterval = 1
 	rebalanceRateAtOnce = 0.1
 	mainAssetToHedgeRebalanceRateAtOnce = 0.2
-	hedgeToMainAssetRebalanceRateAtOnce = 0.01
+	hedgeToMainAssetRebalanceRateAtOnce = 0.2
 
 
 	hedge = hedgeRatio * initialMoney
 	totalStrategyCount = splitStrategyCount * sellRateStrategyCount * delayTradeStrategyCount * losscutStrategyCount * buyOnRiseRatioStrategyCount 
 	budget = initialMoney * (1.0-hedgeRatio) / totalStrategyCount 
 
-	rebalance = True
+	rebalance = False
 	rebalanceHedge =  True
 
 
@@ -229,13 +237,22 @@ for yy in range(0, 1):
 	hedgeStrategyCount = int(initialHedgeMoney / budget)
 	hedgeStrategies = []
 
+	hedgeStrategyCount = 12
 	for i in range (0, hedgeStrategyCount ):
-		data = responseHedge
-		if(i % 2 == 0):
+		if(i%5 == 1):
 			data = responseHedge2
+		if(i%5 == 2):
+			data = responseHedge3
+		if(i%5 == 3):
+			data = responseHedge4
+		if(i%5 == 4):
+			data = responseHedge5
+		else:
+			data = responseHedge
+
 		hs = strat.Strategy(stockData=data, 
-					budget=budget, 
-					splitCount=20, 
+					budget=initialHedgeMoney/hedgeStrategyCount, 
+					splitCount=1, 
 					profitRate=5000, 
 					buyOnRiseRatio=0.0,
 					delayTrade=0, 
@@ -323,7 +340,7 @@ for yy in range(0, 1):
 		toBeReserved_M2H = 0
 		if rebalanceHedge == True  :
 			amount = 0
-			if( recentHedgeAssetRatio < hedgeRatio * 0.85 ): #현재 헷지가 기준치 미달이라면
+			if( recentHedgeAssetRatio < hedgeRatio * 0.95 ): #현재 헷지가 기준치 미달이라면
 				if(dayIdx % mainAssetToHedgeInterval) == (mainAssetToHedgeInterval - 1):
 					insufficientAmount = (hedgeRatio - recentHedgeAssetRatio) * balanceTotal * mainAssetToHedgeRebalanceRateAtOnce
 					toBeReserved_M2H = insufficientAmount
@@ -347,12 +364,14 @@ for yy in range(0, 1):
 
 		for si in range (0, strategyCount):
 			if toBeReserved_M2H > 0:
-				reservedBudgetForRebalance_M2H += strategies[si].transfer_budget(toBeReserved_M2H / strategyCount) # todo
+				rebalancePerStrategy = toBeReserved_M2H / strategyCount 
+				amount = strategies[si].reserve_budget_at_close(dayIdx, rebalancePerStrategy) # todo
+				reservedBudgetForRebalance_M2H += strategies[si].transfer_budget(amount) # todo
 
-			strategies[si].sell_all_when_done(dayIdx)
+			#strategies[si].sell_all_when_done(dayIdx)
 			#strategies[si].buy_weight(dayIdx, buyWeigt*1.01)
 			#strategies[si].buy_weight(dayIdx, buyWeigt)
-			strategies[si].buy(dayIdx)
+			strategies[si].buy_all(dayIdx)
 			strategies[si].post_trade(dayIdx)
 
 
@@ -367,8 +386,8 @@ for yy in range(0, 1):
 				amount = hedgeStrategies[hi].reserve_budget_at_close(dayIdx, rebalancePerStrategy) # todo
 				reservedBudgetForRebalance_H2M += hedgeStrategies[hi].transfer_budget(amount) # todo
 			else:
-				hedgeStrategies[hi].sell_all_when_done(dayIdx)
-				hedgeStrategies[hi].buy(dayIdx)
+				#hedgeStrategies[hi].sell_all_when_done(dayIdx)
+				hedgeStrategies[hi].buy_all(dayIdx)
 
 			hedgeStrategies[hi].post_trade(dayIdx)
 			hedgeAssetBalanceTotal += hedgeStrategies[hi].calc_balance(dayIdx)
@@ -452,7 +471,7 @@ for yy in range(0, 1):
 					taker = sortedStrategies[strategyIdx]
 					giver = sortedStrategies[strategyCount - strategyIdx - 1]
 					amount = giver.transfer_budget( desire * rebalanceRateAtOnce)
-					taker.fill_budget(amount)
+					taker.fill_budget(amount, dayIdx)
 
 
 	#----------------------------------------------------------------------------------------------------------------------
@@ -525,7 +544,6 @@ for yy in range(0, 1):
 
 #################################################################################
 
-	'''
 	class SimpleBTStrat(bt.SignalStrategy):
 		def __init__(self):
 			self.index = 0
@@ -596,7 +614,6 @@ for yy in range(0, 1):
 	cerebro.addobserver(bt.observers.Broker)
 	cerebro.run(stdstats=False)
 	cerebro.plot()
-	'''
 	#################################################################################
 
 	yticks = []
@@ -620,18 +637,18 @@ for yy in range(0, 1):
 	portfolioFinalVal = balanceTotal
 
 	#mul = balances[-1]/closePrices2[-1]
-	toggle+=1
-	plt.plot(strategies[0].stockData.index, originalAssetPrices, color='grey')
-	if(toggle % 2 == 0):
-		color = 'red'
-	else:
-		color = 'blue'
+toggle+=1
+plt.plot(strategies[0].stockData.index, originalAssetPrices, color='grey')
+if(toggle % 2 == 0):
+	color = 'red'
+else:
+	color = 'blue'
 
-	plt.plot(strategies[0].stockData.index, balances, color=color)
-	#plt.plot(strategies[0].stockData.index, scores, color='purple')
-	#plt.plot(strategies[0].stockData.index, scoresDiff, color='red')
-	plt.tight_layout(pad=1.08, h_pad=None, w_pad=None, rect=None)
-	plt.grid(True)
+plt.plot(strategies[0].stockData.index, balances, color=color)
+#plt.plot(strategies[0].stockData.index, scores, color='purple')
+#plt.plot(strategies[0].stockData.index, scoresDiff, color='red')
+plt.tight_layout(pad=1.08, h_pad=None, w_pad=None, rect=None)
+plt.grid(True)
 
 
 #plt.subplot(211)
@@ -640,16 +657,10 @@ for yy in range(0, 1):
 #plt.yscale("log",basey=2)
 
 #plt.legend()
-plt.grid(True)
-plt.show()
 
 #plt.subplot(211)
-plt.plot(outperform_rates_outperform_chart, color='orange')
-plt.plot(outperform_orig_outperform_chart, color='grey')
-plt.plot(outperform_model_outperform_chart, color='red')
 
-plt.tight_layout(pad=1.08, h_pad=None, w_pad=None, rect=None)
-plt.grid(True)
+
 plt.show()
 
 
