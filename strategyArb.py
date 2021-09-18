@@ -2,7 +2,7 @@ import math
 from os import curdir
 import yfinance as yf
 import time
-import datetime
+from datetime import datetime, timedelta
 import matplotlib.pyplot as plt
 
 EPSILON = 0.000000001
@@ -19,6 +19,16 @@ class StrategyArb:
 		self.highPrices = stockData['High']
 		self.lowPrices = stockData['Low']
 		self.stockData['Date'] = stockData.index
+
+		self.dateToIndex = {}
+
+		for i in range(len(stockData.index)):
+			date = self.stockData.Date.index[i]
+			self.dateToIndex[date] = i
+
+		self.startDate = self.stockData.Date.index[0]
+
+
 		self.logTrade = logTrade
 		self.buyOrderPriceFactor = 1
 		self.desiredAllocationRatio = desiredAllocationRatio
@@ -42,23 +52,27 @@ class StrategyArb:
 		self.on_sell = func # fn(dayIndex, price, count)
 	
 
-	def calc_asset_alloc_ratio(self, totalBalance, dayIndex):
-		val = self.calc_balance(dayIndex) / totalBalance
+	def calc_asset_alloc_ratio(self, totalBalance, datetime):
+		val = self.calc_balance(datetime) / totalBalance
 		return val
 
-	def calc_allocation_surplus_ratio(self, totalBalance, dayIndex):
-		curAssetAllocRatio = self.calc_asset_alloc_ratio(totalBalance, dayIndex)
+	def calc_allocation_surplus_ratio(self, totalBalance, datetime):
+		curAssetAllocRatio = self.calc_asset_alloc_ratio(totalBalance, datetime)
 		return curAssetAllocRatio - self.desiredAllocationRatio
 
-	def calc_allocation_surplus_amount(self, totalBalance, dayIndex):
+	def calc_allocation_surplus_amount(self, totalBalance, datetime):
 		desiredBudget = totalBalance * self.desiredAllocationRatio
-		surplusAmount = self.calc_balance(dayIndex=dayIndex) - desiredBudget
+		surplusAmount = self.calc_balance(datetime) - desiredBudget
 		return surplusAmount
 	
 	
-	def _buy_close(self, dayIndex, money) :
+	def _buy_close(self, datetime, money) :
 		#print(money)
+		dayIndex = self.date2index(datetime)
+		if( dayIndex == None ):
+			return False
 		
+
 		if(self.budget <= -EPSILON):
 			return False
 
@@ -102,18 +116,30 @@ class StrategyArb:
 
 		return True
 	
-	def is_tradable(self, dayIndex):
-		if(dayIndex < self.delayTrade):
-			return False
-
-		size = self.closePrices.size
-		if dayIndex >= size:
-			return False
+	def date2index(self, datetime):
+		if datetime in self.dateToIndex:
+			index = self.dateToIndex[datetime]
+			return index
+		return None
 		
-		return True
-
 	
-	def calc_balance(self, dayIndex):
+	def calc_balance(self, datetime):
+		dayIndex = None
+		targetDate = datetime
+
+		if( targetDate < self.startDate ):
+			return self.budget
+
+		while( dayIndex == None ):
+			dayIndex = self.date2index(targetDate)
+			targetDate = targetDate - timedelta(1)
+			
+		if(dayIndex == None):
+			dayIndex = 0
+
+		#if(len(self.stockData.Date.index) == dayIndex):
+		#	str = self.stockData.Date.index[-1]
+		#	print(str)
 		val = self.closePrices[dayIndex] * self.stockCount + self.budget
 		return val
 	
@@ -122,11 +148,11 @@ class StrategyArb:
 		self.budget += money
 		self.lastBalance += money
 
-	def fill_budget_and_buy_all(self, money, dayIndex):
+	def fill_budget_and_buy_all(self, money):
 		self.fill_budget(money)
 
-	def buy_all(self, dayIndex):
-		self._buy_close(dayIndex=dayIndex, money=self.budget)
+	def buy_all(self, datetime):
+		self._buy_close(datetime=datetime, money=self.budget)
 		
 
 	def transfer_budget(self, desiredMoney):
@@ -143,7 +169,10 @@ class StrategyArb:
 
 		return transfered
 
-	def reserve_budget_at_close(self, dayIndex, desiredReserve):
+	def reserve_budget_at_close(self, datetime, desiredReserve):
+		dayIndex = self.date2index(datetime)
+		if( dayIndex == None ):
+			assert(0)
 
 		if(dayIndex == 0):
 			return 0
@@ -174,6 +203,10 @@ class StrategyArb:
 		return self.budget
 
 
-	def post_trade(self, dayIndex):
+	def post_trade(self, datetime):
+		dayIndex = self.date2index(datetime)
+		if( dayIndex == None ):
+			assert(0)
+
 		self.assetValueHistory.append(self.stockCount * self.closePrices[dayIndex])
-		self.balanceHistory.append(self.calc_balance(dayIndex))
+		self.balanceHistory.append(self.calc_balance(datetime))

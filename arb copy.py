@@ -11,7 +11,8 @@ import math
 tickerMainAssets = [("FNGU", 0.2), ("TQQQ", 0.3), ("TECL", 0.3), ("SOXL", 0.2)]
 #tickerHedges = [("UUP", 0.5), ("TMF", 0.5)]
 
-tickerHedges = [("UUP", 0.25), ("TMF", 0.2), ("TIP", 0.25), ("UVXY", 0.15), ("GLD", 0.15)]
+#tickerHedges = [("UUP", 0.2), ("TMF", 0.2), ("TIP", 0.25), ("UVXY", 0.2), ("IEF", 0.03), ("GLD", 0.12)]
+tickerHedges = [("UUP", 0.2), ("TMF", 0.2), ("TIP", 0.25), ("UVXY", 0.15), ("IEF", 0.08), ("GLD", 0.12)]
 #tickerHedge = "UUP"
 #tickerHedge2 = "TMF"
 #tickerHedge2 = "QYLD"
@@ -39,7 +40,8 @@ toggle = 0
 for yy in range(0, 1):
 	beginDate = endDate
 	#endDate = beginDate + timedelta(days=182)
-	endDate = beginDate + timedelta(days=365*11+240)
+	#endDate = beginDate + timedelta(days=365*11+240)
+	endDate = datetime(2021, 9, 16)
 
 	strDateBegin = beginDate.strftime('%Y-%m-%d')
 	strDateEnd = endDate.strftime('%Y-%m-%d')
@@ -174,24 +176,30 @@ for yy in range(0, 1):
 
 		boughtToday = False 
 		strToday = dates[dayIdx]
+		today = dates[dayIdx]
+
+
+
 		for mi in range(mainAssetStrategyCount):
-			if(True == strategies[mi].buy_all(dayIdx)):
+			if(True == strategies[mi].buy_all(today)):
 				boughtToday = True
 	
 		for hi in range(hedgeStrategyCount):
-			hedgeStrategies[hi].buy_all(dayIdx)
-			if(True == strategies[mi].buy_all(dayIdx)):
+			hedgeStrategies[hi].buy_all(today)
+			if(True == strategies[mi].buy_all(today)):
 				boughtToday = True
 	
+
+
 
 		balanceTotal = 0
 		budgetTotal = 0
 		for mi in range(mainAssetStrategyCount):
-			balanceTotal += strategies[mi].calc_balance(dayIdx)
+			balanceTotal += strategies[mi].calc_balance(today)
 			budgetTotal += strategies[mi].budget
 	
 		for hi in range(hedgeStrategyCount):
-			balanceTotal += hedgeStrategies[hi].calc_balance(dayIdx)
+			balanceTotal += hedgeStrategies[hi].calc_balance(today)
 			budgetTotal += hedgeStrategies[hi].budget
 		
 		##################################################################################################################
@@ -209,25 +217,25 @@ for yy in range(0, 1):
 				reservedMoneyTotal = 0
 				takers = []
 				for mi in range(mainAssetStrategyCount):
-					surplus = strategies[mi].calc_allocation_surplus_amount(totalBalance =balanceTotal, dayIndex = dayIdx) * rebalanceRate
+					surplus = strategies[mi].calc_allocation_surplus_amount(totalBalance =balanceTotal, datetime=today) * rebalanceRate
 					if(surplus > 0):
-						reservedMoney = strategies[mi].reserve_budget_at_close(dayIndex= dayIdx, desiredReserve=surplus)
+						reservedMoney = strategies[mi].reserve_budget_at_close(datetime=today, desiredReserve=surplus)
 						reservedMoneyTotal += strategies[mi].transfer_budget(desiredMoney=reservedMoney)
 					else:
 						takers.append(strategies[mi])
 
 			
 				for hi in range(hedgeStrategyCount):
-					surplus = hedgeStrategies[hi].calc_allocation_surplus_amount(totalBalance =balanceTotal, dayIndex = dayIdx) * rebalanceRate
+					surplus = hedgeStrategies[hi].calc_allocation_surplus_amount(totalBalance =balanceTotal, datetime=today) * rebalanceRate
 					if(surplus > 0):
-						reservedMoney = hedgeStrategies[hi].reserve_budget_at_close(dayIndex= dayIdx, desiredReserve=surplus)
+						reservedMoney = hedgeStrategies[hi].reserve_budget_at_close(datetime=today, desiredReserve=surplus)
 						reservedMoneyTotal += hedgeStrategies[hi].transfer_budget(desiredMoney=reservedMoney)
 					else:
 						takers.append(hedgeStrategies[hi])
 
 				takersCount = len(takers)
 				for ti in range(takersCount):
-					insuff = -1 * takers[ti].calc_allocation_surplus_amount(totalBalance =balanceTotal, dayIndex = dayIdx) * rebalanceRate
+					insuff = -1 * takers[ti].calc_allocation_surplus_amount(totalBalance =balanceTotal, datetime=today) * rebalanceRate
 					if( insuff > reservedMoneyTotal ):
 						insuff = reservedMoneyTotal
 					takers[ti].fill_budget(insuff)
